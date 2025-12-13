@@ -1,0 +1,39 @@
+name: soccer_tracking
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pytorch>=2.3.1
+  - torchvision>=0.18.1
+  - pytorch-cuda=12.1
+  - numpy<2.0
+  - pandas
+  - opencv
+  - matplotlib
+  - pip
+  - pip:
+    # Computer Vision & AI Models
+    - ultralytics           # For YOLO (Detection/Tracking)
+    - supervision           # Helpful utils for visualization and counting
+    
+    # SAM 3 (Segment Anything Model 3)
+    # Installing directly from source as it is very new
+    - git+https://github.com/facebookresearch/sam3.git
+    - triton-windows
+    - einops
+    - decord
+    
+    # Metrics (HOTA, DetA, AssA)
+    # The standard library used in academic challenges
+    - git+https://github.com/JonathonLuiten/TrackEval.git
+
+    # Dataset
+    - SoccerNet
+    
+    # Utilities
+    - tqdm
+    - scipy
+    - pyyaml

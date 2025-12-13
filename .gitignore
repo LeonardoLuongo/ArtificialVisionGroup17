@@ -1,0 +1,4 @@
+/dataset/tracking-2023/train/*
+/dataset/tracking-2023/test/*
+/runs
+*.pt
