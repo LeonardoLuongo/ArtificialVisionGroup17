@@ -1,0 +1,16 @@
+numpy<2.0
+pandas
+opencv-python
+matplotlib
+tqdm
+scipy
+pyyaml
+torch>=2.3.1
+torchvision>=0.18.1
+ultralytics
+supervision
+einops
+decord
+SoccerNet
+git+https://github.com/JonathonLuiten/TrackEval.git
+git+https://github.com/facebookresearch/sam3.git

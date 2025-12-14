@@ -2,3 +2,6 @@
 /dataset/tracking-2023/test/*
 /runs
 *.pt
+/.tmp.driveupload
+/.tmp.drivedownload
+/__pycache__/
