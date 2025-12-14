@@ -4,7 +4,6 @@ import numpy as np
 from trackeval.datasets import MotChallenge2DBox
 from trackeval.metrics import HOTA
 from config import *
-# from config import * # Se usi config, assicurati che i path siano assoluti, altrimenti sovrascrivili qui sotto
 
 
 def fix_ids_for_detection_only(trackers_folder):
@@ -74,7 +73,7 @@ def run_evaluation():
         'OUTPUT_SUMMARY': True,
         'OUTPUT_EMPTY_CLASSES': False,
         'OUTPUT_DETAILED': False,
-        'PLOT_CURVES': False,
+        'PLOT_CURVES': True,
     }
 
     dataset_config = {
@@ -138,16 +137,16 @@ def run_evaluation():
         # Percorso: Dataset -> Tracker -> Sequence -> Class -> Metric
         stats = sequences_res[seq_name]['pedestrian']['HOTA']
         
-        deta_score = stats['DetA'][0] * 100 
-        hota_score = stats['HOTA'][0] * 100
+        deta_score = np.mean(stats['DetA']) * 100
+        hota_score = np.mean(stats['HOTA']) * 100
 
         print(f"\nMetriche finali ({tracker_name} - {seq_name}):")
         print(f"DetA: {deta_score:.2f}%")
         print(f"HOTA: {hota_score:.2f}%")
         
         # Se vuoi vedere anche DetRe (Recall) e DetPr (Precision) dato che ti interessano
-        det_re = stats['DetRe'][0] * 100
-        det_pr = stats['DetPr'][0] * 100
+        det_re = np.mean(stats['DetRe']) * 100
+        det_pr = np.mean(stats['DetPr']) * 100
         print(f"DetRe (Recall): {det_re:.2f}%")
         print(f"DetPr (Precision): {det_pr:.2f}%")
 

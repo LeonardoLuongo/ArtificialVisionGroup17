@@ -2,11 +2,13 @@ import os
 from ultralytics import YOLO
 import torch
 from config import *
+import shutil
+import sys
 
 def run_detection_and_save_txt():
     # Carica il modello
     model_name = 'yolo12m.pt'  # Puoi cambiare con il percorso del tuo modello
-    model = YOLO(model_name) 
+    model = YOLO(MODEL_PATH / model_name) 
     model.to('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Modello caricato su: {model.device}")
 
@@ -15,6 +17,28 @@ def run_detection_and_save_txt():
     
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
+    else:
+        # Se la cartella esiste già, controlliamo se è vuota
+        if len(os.listdir(output_folder)) > 0:
+            print(f"\nATTENZIONE: La cartella di output '{output_folder}' contiene già dei file.")
+            conferma = input("Vuoi eliminare TUTTI i file presenti e continuare? (y/n): ").strip().lower()
+
+            if conferma in ['s', 'si', 'y', 'yes']:
+                print("Eliminazione dei file in corso...")
+                for filename in os.listdir(output_folder):
+                    file_path = os.path.join(output_folder, filename)
+                    try:
+                        if os.path.isfile(file_path) or os.path.islink(file_path):
+                            os.unlink(file_path) # Elimina file o link simbolici
+                        elif os.path.isdir(file_path):
+                            shutil.rmtree(file_path) # Elimina sottocartelle
+                    except Exception as e:
+                        print(f"Impossibile eliminare {file_path}. Motivo: {e}")
+                print("Cartella svuotata con successo.\n")
+            else:
+                print("Operazione annullata. Esecuzione interrotta.")
+                sys.exit() # Esce dallo script
+
 
     if not os.path.exists(base_path):
         print(f"Errore: Percorso {base_path} non trovato.")
