@@ -1,0 +1,654 @@
+Directory structure:
+└── ArtificialVisionGroup17/
+    ├── config.py
+    ├── conda/
+    │   ├── build_run.bat
+    │   ├── build_run.sh
+    │   ├── delete/
+    │   │   ├── delete.bat
+    │   │   └── delete.sh
+    │   └── run/
+    │       ├── run.bat
+    │       └── run.sh
+    ├── execute_on_colab/
+    │   ├── requiremets.txt
+    │   └── run.ipynb
+    └── src/
+        ├── Dataset/
+        │   ├── clean_gt.py
+        │   └── download_dataset.py
+        ├── Detector/
+        │   └── YOLO/
+        │       ├── inference.py
+        │       └── train.py
+        └── Eval/
+            ├── run_eval.py
+            └── run_eval_detection_only.py
+
+================================================
+FILE: config.py
+================================================
+from pathlib import Path
+# Questo trova automaticamente la cartella dove si trova QUESTO file (la root)
+ROOT_DIR = Path(__file__).parent.resolve()
+
+MODEL_PATH = ROOT_DIR / "models"
+
+DATASET_BASIC_PATH = ROOT_DIR / "dataset"
+DATASET_TR23 = DATASET_BASIC_PATH / "tracking-2023"
+DATASET_TR23_TEST = DATASET_TR23 / "test"
+DATASET_TR23_TRAIN = DATASET_TR23 / "train"
+
+OUTPUT_DIR = ROOT_DIR/ "out"
+DETECTOR_OUTPUT_DIR = OUTPUT_DIR / "detector_results"
+TRACKER_OUTPUT_DIR = DETECTOR_OUTPUT_DIR / "tracker_results"
+
+SEQMAP_DIR = OUTPUT_DIR / "seqmap"
+SEQMAP_FILE = SEQMAP_DIR / "soccer_test.txt"
+
+
+
+
+================================================
+FILE: conda/build_run.bat
+================================================
+
+@echo off
+echo [INFO] Avvio procedura combinata Build & Run...
+
+:: Chiama lo script di build
+call .\conda\build\build.bat
+
+:: Controlla se c'Ã¨ stato un errore nella build
+if %errorlevel% neq 0 (
+    echo [ERROR] La creazione dell'environment ha fallito. Impossibile eseguire il run.
+    pause
+    exit /b %errorlevel%
+)
+
+echo [INFO] Build completata con successo. Avvio applicazione...
+echo ---------------------------------------------------------
+
+:: Chiama lo script di run
+call conda\run\run.bat
+
+
+================================================
+FILE: conda/build_run.sh
+================================================
+
+#!/bin/bash
+
+echo "[INFO] Avvio procedura combinata Build & Run..."
+
+# Assicura che gli script interni abbiano i permessi di esecuzione
+chmod +x conda/build/build.sh
+chmod +x conda/run/run.sh
+
+# Esegue la build. 
+# L'operatore '&&' assicura che il 'run' parta solo se la 'build' finisce senza errori.
+./conda/build/build.sh && \
+echo "[INFO] Build completata. Avvio applicazione..." && \
+echo "---------------------------------------------------------" && \
+./conda/run/run.sh
+
+
+================================================
+FILE: conda/delete/delete.bat
+================================================
+@echo off
+echo Removing Conda environment 'soccer_tracking'...
+call conda env remove -n soccer_tracking
+echo Deletion complete.
+pause
+
+
+================================================
+FILE: conda/delete/delete.sh
+================================================
+#!/bin/bash
+echo "Removing Conda environment 'soccer_tracking'..."
+conda env remove -n soccer_tracking
+echo "Deletion complete."
+
+
+================================================
+FILE: conda/run/run.bat
+================================================
+@echo off
+call conda activate soccer_tracking
+python main.py
+pause
+
+
+================================================
+FILE: conda/run/run.sh
+================================================
+#!/bin/bash
+# Initialize conda for shell interaction
+eval "$(conda shell.bash hook)"
+conda activate soccer_tracking
+
+# Run the main script
+# Adjust the path to your python script if necessary
+python main.py
+
+
+================================================
+FILE: execute_on_colab/requiremets.txt
+================================================
+numpy<2.0
+pandas
+opencv-python
+matplotlib
+tqdm
+scipy
+pyyaml
+torch>=2.3.1
+torchvision>=0.18.1
+ultralytics
+supervision
+einops
+decord
+SoccerNet
+git+https://github.com/JonathonLuiten/TrackEval.git
+git+https://github.com/facebookresearch/sam3.git
+
+
+
+================================================
+FILE: execute_on_colab/run.ipynb
+================================================
+Error processing notebook: 'text/plain'
+
+
+================================================
+FILE: src/Dataset/clean_gt.py
+================================================
+import os
+import configparser
+import shutil
+from config import *
+
+def clean_gt_for_soccer():
+    # Percorso ai tuoi dati di test (o train se stai facendo prove)
+    base_paths = [DATASET_TR23_TEST, DATASET_TR23_TRAIN]
+    
+    # Classi che consideriamo "TARGET" da tracciare
+    # In base al PDF, il task Ã¨ "Player tracking". 
+    # Solitamente include portieri. Gli arbitri a volte sono esclusi o inclusi.
+    # Se il gameinfo distingue "referee", decidi tu se tenerlo. 
+    # Qui sotto tengo players, goalkeepers e referee.
+    valid_keywords = ['player', 'goalkeeper', 'referee'] 
+
+    
+    for base_path in base_paths:
+        if not os.path.exists(base_path):
+            print(f"Errore: {base_path} non trovato.")
+            return
+        
+        for seq_name in os.listdir(base_path):
+            seq_path = os.path.join(base_path, seq_name)
+            gameinfo_path = os.path.join(seq_path, 'gameinfo.ini')
+            gt_folder = os.path.join(seq_path, 'gt')
+            gt_path = os.path.join(gt_folder, 'gt.txt')
+            
+            # Facciamo un backup del gt originale se non esiste
+            gt_backup = os.path.join(gt_folder, 'gt_backup.txt')
+
+            if os.path.exists(gameinfo_path) and os.path.exists(gt_path):
+                if not os.path.exists(gt_backup):
+                    shutil.copy(gt_path, gt_backup)
+                
+                # Leggiamo gli ID da rimuovere (es. la palla)
+                config = configparser.ConfigParser()
+                config.read(gameinfo_path)
+                
+                ids_to_keep = []
+                if 'Sequence' in config:
+                    for key, value in config['Sequence'].items():
+                        if key.startswith('trackletid_'):
+                            # Se la descrizione contiene player/goalkeeper/referee, teniamo l'ID
+                            if any(k in value.lower() for k in valid_keywords):
+                                try:
+                                    # trackletID_20 -> prendiamo 20
+                                    obj_id = int(key.split('_')[1])
+                                    ids_to_keep.append(obj_id)
+                                except:
+                                    pass
+
+                # Riscriviamo il GT pulito
+                with open(gt_backup, 'r') as f_in, open(gt_path, 'w') as f_out:
+                    for line in f_in:
+                        parts = line.strip().split(',')
+                        # Formato GT: frame, ID, x, y, w, h, conf, class, vis
+                        if len(parts) < 6: continue
+                        
+                        obj_id = int(parts[1])
+                        
+                        if obj_id in ids_to_keep:
+                            # TRUCCO TECNICO:
+                            # Assicuriamoci che ci siano 10 colonne (standard MOT)
+                            # E impostiamo la colonna 8 (classe) a 1 ("pedestrian" per TrackEval)
+                            # Anche se sono calciatori, TrackEval vuole vedere "1" lÃ¬.
+                            
+                            # Recuperiamo i dati essenziali
+                            frame = parts[0]
+                            pid = parts[1]
+                            x, y, w, h = parts[2:6]
+                            
+                            # Creiamo la riga perfetta per TrackEval:
+                            # conf=1, class=1, visibility=1
+                            new_line = f"{frame},{pid},{x},{y},{w},{h},1,1,1\n"
+                            f_out.write(new_line)
+                
+                print(f"Pulito GT per sequenza: {seq_name}")
+
+if __name__ == "__main__":
+    clean_gt_for_soccer()
+
+
+================================================
+FILE: src/Dataset/download_dataset.py
+================================================
+from SoccerNet.Downloader import SoccerNetDownloader
+
+def donwnload_tracking_2023():
+    mySoccerNetDownloader = SoccerNetDownloader(LocalDirectory="./dataset")
+    mySoccerNetDownloader.downloadDataTask(task="tracking-2023", split=["train", "test", "challenge"])
+
+if __name__ == "__main__":
+    donwnload_tracking_2023()
+
+
+================================================
+FILE: src/Detector/YOLO/inference.py
+================================================
+import os
+from ultralytics import YOLO
+import torch
+from config import *
+import shutil
+import sys
+
+def run_detection_and_save_txt():
+    # Carica il modello
+    model_name = 'yolo12m.pt'  # Puoi cambiare con il percorso del tuo modello
+    model = YOLO(MODEL_PATH / model_name) 
+    model.to('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"Modello caricato su: {model.device}")
+
+    base_path = DATASET_TR23_TEST
+    output_folder = DETECTOR_OUTPUT_DIR / model_name.split(".")[0] # Cartella dove salveremo i txt per TrackEval
+    
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    else:
+        # Se la cartella esiste giÃ , controlliamo se Ã¨ vuota
+        if len(os.listdir(output_folder)) > 0:
+            print(f"\nATTENZIONE: La cartella di output '{output_folder}' contiene giÃ  dei file.")
+            conferma = input("Vuoi eliminare TUTTI i file presenti e continuare? (y/n): ").strip().lower()
+
+            if conferma in ['s', 'si', 'y', 'yes']:
+                print("Eliminazione dei file in corso...")
+                for filename in os.listdir(output_folder):
+                    file_path = os.path.join(output_folder, filename)
+                    try:
+                        if os.path.isfile(file_path) or os.path.islink(file_path):
+                            os.unlink(file_path) # Elimina file o link simbolici
+                        elif os.path.isdir(file_path):
+                            shutil.rmtree(file_path) # Elimina sottocartelle
+                    except Exception as e:
+                        print(f"Impossibile eliminare {file_path}. Motivo: {e}")
+                print("Cartella svuotata con successo.\n")
+            else:
+                print("Operazione annullata. Esecuzione interrotta.")
+                sys.exit() # Esce dallo script
+
+
+    if not os.path.exists(base_path):
+        print(f"Errore: Percorso {base_path} non trovato.")
+        return
+
+    sequences = os.listdir(base_path)
+
+    for seq_name in sequences:
+        seq_path = os.path.join(base_path, seq_name)
+        img_source = os.path.join(seq_path, 'img1')
+
+        if os.path.isdir(seq_path) and os.path.exists(img_source):
+            print(f"--> Elaborazione sequenza: {seq_name}")
+            
+            # File di output per questa sequenza
+            res_file_path = os.path.join(output_folder, f"{seq_name}.txt")
+            
+            # Eseguiamo l'inferenza usando lo stream per non saturare la RAM
+            # stream=True restituisce un generatore
+            results = model.predict(source=img_source, conf=0.25, verbose=False, stream=True, device=0, classes=[0])
+            
+            with open(res_file_path, 'w') as f:
+                for result in results:
+                    # Otteniamo il numero del frame dal percorso del file
+                    # Es: '.../000001.jpg' -> frame_id = 1
+                    path = result.path
+                    frame_id = int(os.path.basename(path).split('.')[0])
+                    
+                    # I box sono in formato xywh (x_center, y_center, width, height) o xyxy
+                    # Per MOT serve: Top-Left X, Top-Left Y, Width, Height
+                    boxes = result.boxes.cpu().numpy()
+                    
+                    for box in boxes:
+                        # Estrai coordinate xywh (top-left)
+                        # box.xywh restituisce centro; box.xyxy restituisce angoli.
+                        # box.xywhn normalizzato. 
+                        # Ultralytics ha xywh come (center_x, center_y, w, h).
+                        # Noi vogliamo (top_left_x, top_left_y, w, h).
+                        
+                        x1, y1, x2, y2 = box.xyxy[0]
+                        w = x2 - x1
+                        h = y2 - y1
+                        conf = box.conf[0]
+                        cls = box.cls[0]
+
+                        # FILTRO: Assicuriamoci di salvare solo la classe "persona" (id 0 in COCO)
+                        if int(cls) == 0: 
+                            # Scriviamo nel formato MOT:
+                            # frame, id, x, y, w, h, conf, -1, -1, -1
+                            # Dato che Ã¨ detection pura, ID mettiamo -1 o 1, non importa per DetA
+                            line = f"{frame_id},-1,{x1:.2f},{y1:.2f},{w:.2f},{h:.2f},{conf:.4f},-1,1,-1\n"
+                            f.write(line)
+            
+            print(f"Salvati risultati in: {res_file_path}")
+
+            with open(SEQMAP_FILE, 'a') as seqmap_file:
+                seqmap_file.write(f"{seq_name}\n")
+
+if __name__ == "__main__":
+    run_detection_and_save_txt()
+
+
+================================================
+FILE: src/Detector/YOLO/train.py
+================================================
+
+
+
+
+
+================================================
+FILE: src/Eval/run_eval.py
+================================================
+import sys
+import os
+import numpy as np
+from trackeval.datasets import MotChallenge2DBox
+from trackeval.metrics import HOTA
+from config import *
+
+def run_evaluation():
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = ROOT_DIR
+    
+    # --- CORREZIONE QUI SOTTO ---
+    # GT_FOLDER deve puntare alla cartella che CONTIENE le sequenze (SNMOT-XXX)
+    # Non aggiungere "gt" qui.
+    gt_folder_abs = DATASET_TR23_TEST 
+    
+    trackers_folder_abs = DETECTOR_OUTPUT_DIR 
+    seqmap_folder_abs = SEQMAP_DIR 
+    
+    print(f"Cercando GT in: {gt_folder_abs}") 
+    # Dovrebbe stampare: .../dataset/tracking-2023/test
+    print(f"Cercando Seqmap in: {seqmap_folder_abs}")
+
+    # Verifica veloce
+    if not os.path.exists(os.path.join(gt_folder_abs, 'SNMOT-116', 'seqinfo.ini')):
+        print("ATTENZIONE: seqinfo.ini non trovato nemmeno nel path assoluto per 116!")
+
+    eval_config = {
+        'USE_PARALLEL': False,
+        'NUM_PARALLEL_CORES': 1,
+        'PRINT_RESULTS': True,
+        'PRINT_ONLY_COMBINED': False,
+        'OUTPUT_SUMMARY': True,
+        'OUTPUT_EMPTY_CLASSES': False,
+        'OUTPUT_DETAILED': False,
+        'PLOT_CURVES': False,
+    }
+
+    dataset_config = {
+        'GT_FOLDER': gt_folder_abs, 
+        'TRACKERS_FOLDER': trackers_folder_abs,
+        'OUTPUT_FOLDER': None,
+        'TRACKERS_TO_EVAL': None, 
+        'CLASSES_TO_EVAL': ['pedestrian'], 
+        'BENCHMARK': 'MOT17', 
+        'SPLIT_TO_EVAL': 'test',
+        'INPUT_AS_ZIP': False,
+        'PRINT_CONFIG': False,
+        'DO_PREPROC': False,
+        'TRACKER_SUB_FOLDER': '', 
+        'OUTPUT_SUB_FOLDER': '',
+        "OUTPUT_SUMMARY": True, 
+        
+        # --- MODIFICA QUI ---
+        # Imposta a True perchÃ© il tuo gt_folder_abs include giÃ  "/test"
+        'SKIP_SPLIT_FOL': True, 
+        
+        'SEQ_INFO': None,
+        'SUB_FOLDER': 'gt', 
+        'SEQMAP_FOLDER': seqmap_folder_abs, 
+        'SEQMAP_FILE': SEQMAP_FILE, 
+    }
+    
+    dataset = MotChallenge2DBox(dataset_config)
+    hota = HOTA()
+    
+    import trackeval
+    evaluator = trackeval.Evaluator(eval_config)
+    try:
+        np.float = float
+        np.int = int   # Spesso serve anche questo
+    except AttributeError:
+        pass
+    results = evaluator.evaluate([dataset], [hota])
+    
+    if results:
+        # 1. Ottieni il dizionario del Dataset (livello 'MotChallenge2DBox')
+        dataset_res = results[0]
+        dataset_name = list(dataset_res.keys())[0]
+        
+        # 2. Ottieni il dizionario del Tracker (livello 'yolo')
+        tracker_res = dataset_res[dataset_name]
+        tracker_name = list(tracker_res.keys())[0]
+        
+        # 3. Ottieni il dizionario delle Sequenze
+        sequences_res = tracker_res[tracker_name]
+        
+        # Qui hai una scelta: vuoi la media totale o una sequenza specifica?
+        # TrackEval solitamente crea una chiave 'COMBINED_SEQ' per la media.
+        # Se non c'Ã¨, prendiamo la prima sequenza disponibile (es. SNMOT-117).
+        seq_name = 'COMBINED_SEQ'
+        if seq_name not in sequences_res:
+            seq_name = list(sequences_res.keys())[0]
+            print(f"Attenzione: 'COMBINED_SEQ' non trovato. Mostro i risultati per: {seq_name}")
+        
+        # 4. Finalmente accediamo alla classe 'pedestrian' e alle metriche 'HOTA'
+        # Percorso: Dataset -> Tracker -> Sequence -> Class -> Metric
+        stats = sequences_res[seq_name]['pedestrian']['HOTA']
+        
+        deta_score = stats['DetA'][0] * 100 
+        hota_score = stats['HOTA'][0] * 100
+
+        print(f"\nMetriche finali ({tracker_name} - {seq_name}):")
+        print(f"DetA: {deta_score:.2f}%")
+        print(f"HOTA: {hota_score:.2f}%")
+        
+        # Se vuoi vedere anche DetRe (Recall) e DetPr (Precision) dato che ti interessano
+        det_re = stats['DetRe'][0] * 100
+        det_pr = stats['DetPr'][0] * 100
+        print(f"DetRe (Recall): {det_re:.2f}%")
+        print(f"DetPr (Precision): {det_pr:.2f}%")
+
+if __name__ == "__main__":
+    run_evaluation()
+
+
+================================================
+FILE: src/Eval/run_eval_detection_only.py
+================================================
+import sys
+import os
+import numpy as np
+from trackeval.datasets import MotChallenge2DBox
+from trackeval.metrics import HOTA
+from config import *
+
+
+def fix_ids_for_detection_only(trackers_folder):
+    """
+    Scansiona i file .txt dei risultati e assegna un ID univoco a ogni riga.
+    Questo serve perchÃ© TrackEval crasha se vede ID duplicati (es. -1) nello stesso frame.
+    """
+    import glob
+    
+    # Cerca tutti i file .txt ricorsivamente nella cartella dei tracker
+    txt_files = glob.glob(os.path.join(trackers_folder, '**', '*.txt'), recursive=True)
+    
+    if not txt_files:
+        print(f"Nessun file .txt trovato in {trackers_folder} da correggere.")
+        return
+
+    print(f"Correzione ID per {len(txt_files)} file (Detection only mode)...")
+    
+    for txt_file in txt_files:
+        with open(txt_file, 'r') as f:
+            lines = f.readlines()
+        
+        new_lines = []
+        # Usa un contatore globale o per riga per garantire unicitÃ  assoluta
+        for i, line in enumerate(lines):
+            parts = line.strip().split(',')
+            if len(parts) < 6: continue
+            
+            # --- TRUCCO ---
+            # Sostituisci la colonna ID (indice 1) con un numero progressivo (i+1)
+            # Formato MOT: <frame>, <id>, <bb_left>, <bb_top>, <width>, <height>, ...
+            parts[1] = str(i + 1) 
+            
+            new_lines.append(','.join(parts) + '\n')
+            
+        # Sovrascrivi il file (o salvane una copia se preferisci)
+        with open(txt_file, 'w') as f:
+            f.writelines(new_lines)
+    
+    print("Correzione ID completata.")
+
+def run_evaluation():
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = ROOT_DIR
+    
+    # --- CORREZIONE QUI SOTTO ---
+    # GT_FOLDER deve puntare alla cartella che CONTIENE le sequenze (SNMOT-XXX)
+    # Non aggiungere "gt" qui.
+    gt_folder_abs = DATASET_TR23_TEST 
+    
+    trackers_folder_abs = DETECTOR_OUTPUT_DIR 
+    seqmap_folder_abs = SEQMAP_DIR 
+    
+    print(f"Cercando GT in: {gt_folder_abs}") 
+    # Dovrebbe stampare: .../dataset/tracking-2023/test
+    print(f"Cercando Seqmap in: {seqmap_folder_abs}")
+
+    # Verifica veloce
+    if not os.path.exists(os.path.join(gt_folder_abs, 'SNMOT-116', 'seqinfo.ini')):
+        print("ATTENZIONE: seqinfo.ini non trovato nemmeno nel path assoluto per 116!")
+
+    eval_config = {
+        'USE_PARALLEL': False,
+        'NUM_PARALLEL_CORES': 1,
+        'PRINT_RESULTS': True,
+        'PRINT_ONLY_COMBINED': False,
+        'OUTPUT_SUMMARY': True,
+        'OUTPUT_EMPTY_CLASSES': False,
+        'OUTPUT_DETAILED': False,
+        'PLOT_CURVES': True,
+    }
+
+    dataset_config = {
+        'GT_FOLDER': gt_folder_abs, 
+        'TRACKERS_FOLDER': trackers_folder_abs,
+        'OUTPUT_FOLDER': None,
+        'TRACKERS_TO_EVAL': None, 
+        'CLASSES_TO_EVAL': ['pedestrian'], 
+        'BENCHMARK': 'MOT17', 
+        'SPLIT_TO_EVAL': 'test',
+        'INPUT_AS_ZIP': False,
+        'PRINT_CONFIG': False,
+        'DO_PREPROC': False,
+        'TRACKER_SUB_FOLDER': '', 
+        'OUTPUT_SUB_FOLDER': '',
+        "OUTPUT_SUMMARY": True, 
+        
+        # --- MODIFICA QUI ---
+        # Imposta a True perchÃ© il tuo gt_folder_abs include giÃ  "/test"
+        'SKIP_SPLIT_FOL': True, 
+        
+        'SEQ_INFO': None,
+        'SUB_FOLDER': 'gt', 
+        'SEQMAP_FOLDER': seqmap_folder_abs, 
+        'SEQMAP_FILE': SEQMAP_FILE, 
+    }
+    fix_ids_for_detection_only(trackers_folder_abs)
+    dataset = MotChallenge2DBox(dataset_config)
+    hota = HOTA()
+    
+    import trackeval
+    evaluator = trackeval.Evaluator(eval_config)
+    try:
+        np.float = float
+        np.int = int   # Spesso serve anche questo
+    except AttributeError:
+        pass
+    results = evaluator.evaluate([dataset], [hota])
+    
+    if results:
+        # 1. Ottieni il dizionario del Dataset (livello 'MotChallenge2DBox')
+        dataset_res = results[0]
+        dataset_name = list(dataset_res.keys())[0]
+        
+        # 2. Ottieni il dizionario del Tracker (livello 'yolo')
+        tracker_res = dataset_res[dataset_name]
+        tracker_name = list(tracker_res.keys())[0]
+        
+        # 3. Ottieni il dizionario delle Sequenze
+        sequences_res = tracker_res[tracker_name]
+        
+        # Qui hai una scelta: vuoi la media totale o una sequenza specifica?
+        # TrackEval solitamente crea una chiave 'COMBINED_SEQ' per la media.
+        # Se non c'Ã¨, prendiamo la prima sequenza disponibile (es. SNMOT-117).
+        seq_name = 'COMBINED_SEQ'
+        if seq_name not in sequences_res:
+            seq_name = list(sequences_res.keys())[0]
+            print(f"Attenzione: 'COMBINED_SEQ' non trovato. Mostro i risultati per: {seq_name}")
+        
+        # 4. Finalmente accediamo alla classe 'pedestrian' e alle metriche 'HOTA'
+        # Percorso: Dataset -> Tracker -> Sequence -> Class -> Metric
+        stats = sequences_res[seq_name]['pedestrian']['HOTA']
+        
+        deta_score = np.mean(stats['DetA']) * 100
+        hota_score = np.mean(stats['HOTA']) * 100
+
+        print(f"\nMetriche finali ({tracker_name} - {seq_name}):")
+        print(f"DetA: {deta_score:.2f}%")
+        print(f"HOTA: {hota_score:.2f}%")
+        
+        # Se vuoi vedere anche DetRe (Recall) e DetPr (Precision) dato che ti interessano
+        det_re = np.mean(stats['DetRe']) * 100
+        det_pr = np.mean(stats['DetPr']) * 100
+        print(f"DetRe (Recall): {det_re:.2f}%")
+        print(f"DetPr (Precision): {det_pr:.2f}%")
+
+if __name__ == "__main__":
+    run_evaluation()
+

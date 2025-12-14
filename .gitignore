@@ -1,7 +1,13 @@
-/dataset/tracking-2023/train/*
-/dataset/tracking-2023/test/*
+
 /runs
 *.pt
 /.tmp.driveupload
 /.tmp.drivedownload
 /__pycache__/
+/dataset/**/*.jpg
+/dataset/**/dataset_yolo/labels/**/*.txt
+/dataset/**/dataset_yolo/labels/**/*.txt
+/dataset/tracking-2023/train/*
+/dataset/tracking-2023/test/*
+*.cache
+*.cache
