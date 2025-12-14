@@ -1,0 +1,23 @@
+name: soccer_tracking
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pytorch
+  - torchvision
+  - numpy<2.0
+  - pandas
+  - opencv
+  - matplotlib
+  - pip
+  - pip:
+    - ultralytics
+    - supervision
+    - git+https://github.com/facebookresearch/sam3.git
+    - einops
+    - git+https://github.com/JonathonLuiten/TrackEval.git
+    - tqdm
+    - scipy
+    - pyyaml
