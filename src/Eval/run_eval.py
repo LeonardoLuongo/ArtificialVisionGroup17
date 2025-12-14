@@ -4,8 +4,6 @@ import numpy as np
 from trackeval.datasets import MotChallenge2DBox
 from trackeval.metrics import HOTA
 from config import *
-# from config import * # Se usi config, assicurati che i path siano assoluti, altrimenti sovrascrivili qui sotto
-
 
 def run_evaluation():
     current_dir = os.path.dirname(os.path.abspath(__file__))
