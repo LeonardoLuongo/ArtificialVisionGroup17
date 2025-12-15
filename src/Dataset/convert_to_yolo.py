@@ -12,6 +12,10 @@ from tqdm import tqdm
 ROOT_DIR = Path(__file__).parent.parent.parent.resolve()
 sys.path.append(str(ROOT_DIR))
 
+
+# Definiamo il tasso di campionamento (1 frame ogni 10)
+TRAIN_SUBSAMPLE_RATE = 10
+
 # Importiamo le costanti definite in config
 from config import DATASET_TR23_TRAIN, YOLO_DATASET_PATH, SPLIT_DIR
 
@@ -113,6 +117,13 @@ def convert_dataset_from_manifest():
             # D. Copiamo le immagini e creiamo i file label
             for img_file in img_source_dir.glob("*.jpg"):
                 frame_idx = int(img_file.stem) # es. '000001' -> 1
+
+                if split_name == 'train':
+                    # Esempio: tiene frame 1, 11, 21... (se il resto della div è 1)
+                    # Oppure frame 10, 20, 30... (se resto è 0). 
+                    # Usiamo (frame_idx - 1) % RATE == 0 per prendere il primo frame sicuro.
+                    if (frame_idx - 1) % TRAIN_SUBSAMPLE_RATE != 0:
+                        continue 
                 
                 # Nome univoco: SequenceName_ImageName.jpg
                 new_filename = f"{seq_name}_{img_file.name}"

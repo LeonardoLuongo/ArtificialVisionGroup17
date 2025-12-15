@@ -18,7 +18,7 @@ def train_yolo():
 
     # Carica modello pre-addestrato (es. yolov8m.pt o quello che usi)
     # Nota: Assicurati che il nome del modello sia corretto (yolo12m non esiste ufficialmente, forse intendi v8 o v11?)
-    model_name = 'yolo12m.pt' 
+    model_name = 'yolo11m.pt' 
     model = YOLO(MODEL_PATH / model_name) 
 
     print(f"Avvio training di {model_name}...")
@@ -28,13 +28,15 @@ def train_yolo():
         data=str(dataset_yaml),
         epochs=50,             # Regola in base al tempo (50-100 è buono)
         imgsz=640,             # O 1280 se hai GPU potente e vuoi vedere i piccoli dettagli
-        batch=6,              # Regola in base alla VRAM
+        batch=8,              # Regola in base alla VRAM
         project=str(MODEL_PATH / "training_runs"),
         name='soccernet_finetune',
         exist_ok=True,
         device=0,              # GPU id
         plots=True,
-        patience=10            # Early stopping se non migliora per 10 epoche
+        patience=10,            # Early stopping se non migliora per 10 epoche
+        cache=False,
+        workers=4
     )
     
     print("Training completato.")

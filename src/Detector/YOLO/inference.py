@@ -7,8 +7,8 @@ import sys
 
 def run_detection_and_save_txt():
     # Carica il modello
-    model_name = 'yolo12m.pt'  # Puoi cambiare con il percorso del tuo modello
-    model = YOLO(MODEL_PATH / model_name) 
+    model_name = 'best.pt'  # Puoi cambiare con il percorso del tuo modello
+    model = YOLO(MODEL_PATH / "training_runs" / "soccernet_finetune" / "weights" / model_name) 
     model.to('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Modello caricato su: {model.device}")
 
