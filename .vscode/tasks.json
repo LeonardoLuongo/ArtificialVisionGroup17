@@ -1,0 +1,20 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "🚀 Start Background Training (Windows)",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-Command",
+                "Start-Process -FilePath 'python' -ArgumentList '${file}' -RedirectStandardOutput '.\\${fileBasenameNoExtension}_log.txt' -RedirectStandardError '.\\${fileBasenameNoExtension}_error.txt' -WindowStyle Hidden"
+            ],
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        }
+    ]
+}

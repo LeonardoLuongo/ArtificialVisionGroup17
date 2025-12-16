@@ -18,7 +18,7 @@ def train_yolo():
 
     # Carica modello pre-addestrato (es. yolov8m.pt o quello che usi)
     # Nota: Assicurati che il nome del modello sia corretto (yolo12m non esiste ufficialmente, forse intendi v8 o v11?)
-    model_name = 'yolo11m.pt' 
+    model_name = 'yolo12m.pt' 
     model = YOLO(MODEL_PATH / model_name) 
 
     print(f"Avvio training di {model_name}...")
