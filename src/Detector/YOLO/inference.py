@@ -4,12 +4,14 @@ import torch
 from config import *
 import shutil
 import sys
+from src.utils.get_best_device import get_best_device
 
 def run_detection_and_save_txt():
     # Carica il modello
+    DEVICE = get_best_device()
     model_name = 'best.pt'  # Puoi cambiare con il percorso del tuo modello
-    model = YOLO(MODEL_PATH / "training_runs" / "soccernet_finetune" / "weights" / model_name) 
-    model.to('cuda' if torch.cuda.is_available() else 'cpu')
+    model = YOLO(MODEL_PATH / "training_runs" / "soccernet_high_precision" / "weights" / model_name) 
+    model.to(DEVICE)
     print(f"Modello caricato su: {model.device}")
 
     base_path = DATASET_TR23_TEST
