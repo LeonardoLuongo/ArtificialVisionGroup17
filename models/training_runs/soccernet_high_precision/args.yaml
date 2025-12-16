@@ -6,12 +6,12 @@ epochs: 50
 time: null
 patience: 100
 batch: 8
-imgsz: 640
+imgsz: 1024
 save: true
 save_period: -1
 cache: false
 device: '0'
-workers: 8
+workers: 4
 project: C:\Users\leona\Documents\AV_Project\ArtificialVisionGroup17\models\training_runs
 name: soccernet_high_precision
 exist_ok: true

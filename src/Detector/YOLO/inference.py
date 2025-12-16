@@ -60,7 +60,7 @@ def run_detection_and_save_txt():
             
             # Eseguiamo l'inferenza usando lo stream per non saturare la RAM
             # stream=True restituisce un generatore
-            results = model.predict(source=img_source, conf=0.25, verbose=False, stream=True, device=0, classes=[0])
+            results = model.predict(source=img_source, conf=0.25, imgsz=1280, verbose=False, stream=True, device=0, classes=[0])
             
             with open(res_file_path, 'w') as f:
                 for result in results:

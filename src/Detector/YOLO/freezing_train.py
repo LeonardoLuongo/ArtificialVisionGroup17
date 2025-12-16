@@ -1,5 +1,6 @@
 # src/Detector/YOLO/train_tuned.py
 from ultralytics import YOLO
+from ultralytics.utils import metrics
 from pathlib import Path
 import sys
 
@@ -8,10 +9,20 @@ ROOT_DIR = Path(__file__).parent.parent.parent.parent.resolve()
 sys.path.append(str(ROOT_DIR))
 from config import *
 
+def custom_fitness(x):
+    """
+    x = [P, R, mAP@50, mAP@50-95]
+    Di default YOLO usa: 0.1 * mAP@50 + 0.9 * mAP@50-95
+    Noi usiamo: 1.0 * mAP@50 + 0.0 * mAP@50-95
+    """
+    return x[2] # Restituisce solo mAP@50
+
+# Sovrascriviamo la funzione della libreria
+metrics.fitness = custom_fitness
+
 def train_yolo_tuned():
     dataset_yaml = YOLO_DATASET_PATH / "dataset.yaml"
     
-    # Usa yolov8m o yolo11m (il più recente supportato)
     model_name = 'yolo12m.pt' 
     model = YOLO(MODEL_PATH / model_name) 
 
@@ -20,7 +31,7 @@ def train_yolo_tuned():
     results = model.train(
         data=str(dataset_yaml),
         epochs=50,
-        imgsz=640,
+        imgsz=1024,
         batch=8,
         
         # --- TUNING DEI PESI DELLA LOSS (Il tuo tocco magico) ---
@@ -37,10 +48,11 @@ def train_yolo_tuned():
         name='soccernet_high_precision',
         exist_ok=True,
         plots=True,
-        device=0
+        device=0,
+        workers=4
     )
+    print("Training completato.")
     
-    print("Training completato. Controlla se mAP50-95 è migliorata!")
 
 if __name__ == "__main__":
     train_yolo_tuned()

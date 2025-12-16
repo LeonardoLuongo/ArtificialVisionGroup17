@@ -13,8 +13,8 @@ ROOT_DIR = Path(__file__).parent.parent.parent.resolve()
 sys.path.append(str(ROOT_DIR))
 
 
-# Definiamo il tasso di campionamento (1 frame ogni 10)
-TRAIN_SUBSAMPLE_RATE = 10
+# Definiamo il tasso di campionamento (1 frame ogni 25)
+TRAIN_SUBSAMPLE_RATE = 25
 
 # Importiamo le costanti definite in config
 from config import DATASET_TR23_TRAIN, YOLO_DATASET_PATH, SPLIT_DIR
