@@ -21,3 +21,4 @@ dependencies:
     - tqdm
     - scipy
     - pyyaml
+    - scikit-learn
