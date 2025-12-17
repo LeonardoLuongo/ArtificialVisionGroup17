@@ -35,9 +35,9 @@ def train_yolo_tuned():
         batch=8,
         
         # --- TUNING DEI PESI DELLA LOSS (Il tuo tocco magico) ---
-        # box=12.0,   # AUMENTATO (Default 7.5): Priorità massima alla precisione geometrica
-        # dfl=2.0,    # AUMENTATO (Default 1.5): Migliora i bordi fini
-        # cls=0.4,    # RIDOTTO (Default 0.5): Classificare è facile (poche classi), concentriamoci sui box
+        box=12.0,   # AUMENTATO (Default 7.5): Priorità massima alla precisione geometrica
+        dfl=2.0,    # AUMENTATO (Default 1.5): Migliora i bordi fini
+        cls=0.4,    # RIDOTTO (Default 0.5): Classificare è facile (poche classi), concentriamoci sui box
         
         # --- Altri parametri di stabilità ---
         optimizer='AdamW',
