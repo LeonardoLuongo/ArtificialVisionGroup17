@@ -5,8 +5,8 @@ data: C:\Users\leona\Documents\AV_Project\ArtificialVisionGroup17\dataset\tracki
 epochs: 50
 time: null
 patience: 100
-batch: 8
-imgsz: 1024
+batch: 4
+imgsz: 1280
 save: true
 save_period: -1
 cache: false
@@ -77,9 +77,9 @@ weight_decay: 0.0005
 warmup_epochs: 3.0
 warmup_momentum: 0.8
 warmup_bias_lr: 0.1
-box: 12.0
-cls: 0.4
-dfl: 2.0
+box: 7.5
+cls: 1.5
+dfl: 1.5
 pose: 12.0
 kobj: 1.0
 nbs: 64
@@ -88,7 +88,7 @@ hsv_s: 0.7
 hsv_v: 0.4
 degrees: 0.0
 translate: 0.1
-scale: 0.5
+scale: 0.8
 shear: 0.0
 perspective: 0.0
 flipud: 0.0

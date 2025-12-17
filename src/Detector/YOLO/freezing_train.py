@@ -31,14 +31,18 @@ def train_yolo_tuned():
     results = model.train(
         data=str(dataset_yaml),
         epochs=50,
-        imgsz=1024,
-        batch=8,
+        imgsz=1280,
+        batch=4,
         
         # --- TUNING DEI PESI DELLA LOSS (Il tuo tocco magico) ---
-        box=12.0,   # AUMENTATO (Default 7.5): Priorità massima alla precisione geometrica
-        dfl=2.0,    # AUMENTATO (Default 1.5): Migliora i bordi fini
-        cls=0.4,    # RIDOTTO (Default 0.5): Classificare è facile (poche classi), concentriamoci sui box
-        
+        box=7.5,    # (Default): Allows slightly looser boxes, increases recall
+        cls=1.5,    # INCREASED: Penalize missing players (FN) heavily
+        dfl=1.5,    # SLIGHTLY REDUCED: We don't need pixel-perfect distribution
+
+        # --- Augmentation to help small objects ---
+        scale=0.8,  # Allow significant zooming in during training
+        degrees=0.0,
+            
         # --- Altri parametri di stabilità ---
         optimizer='AdamW',
         lr0=0.0005, 
