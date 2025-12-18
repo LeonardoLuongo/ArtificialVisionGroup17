@@ -14,3 +14,4 @@ decord
 SoccerNet
 git+https://github.com/JonathonLuiten/TrackEval.git
 git+https://github.com/facebookresearch/sam3.git
+tabulate

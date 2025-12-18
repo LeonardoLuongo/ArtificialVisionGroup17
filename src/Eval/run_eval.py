@@ -10,7 +10,7 @@ def run_evaluation():
     # --- CONFIGURAZIONE PATH ---
     # GT_FOLDER deve puntare alla cartella che CONTIENE le sequenze (SNMOT-XXX)
     gt_folder_abs = DATASET_TR23_TEST 
-    trackers_folder_abs = DETECTOR_OUTPUT_DIR 
+    trackers_folder_abs = TRACKER_OUTPUT_DIR 
     seqmap_folder_abs = SEQMAP_DIR 
     
     print(f"Cercando GT in: {gt_folder_abs}") 
@@ -101,6 +101,10 @@ def run_evaluation():
         det_pr = stats['DetPr'][idx] * 100
         print(f"DetRe (Recall): {det_re:.2f}%")
         print(f"DetPr (Precision): {det_pr:.2f}%")
+        
+        for metric in stats.keys():
+            print(f"{metric}: {stats[metric][idx]}")
+        
 
 if __name__ == "__main__":
     run_evaluation()

@@ -15,7 +15,7 @@ SPLIT_DIR = YOLO_DATASET_PATH / "splits"
 
 OUTPUT_DIR = ROOT_DIR/ "out"
 DETECTOR_OUTPUT_DIR = OUTPUT_DIR / "detector_results"
-TRACKER_OUTPUT_DIR = DETECTOR_OUTPUT_DIR / "tracker_results"
+TRACKER_OUTPUT_DIR = OUTPUT_DIR / "tracker_results"
 
 SEQMAP_DIR = OUTPUT_DIR / "seqmap"
 SEQMAP_FILE = SEQMAP_DIR / "soccer_test.txt"

@@ -30,6 +30,7 @@ dependencies:
     # Metrics (HOTA, DetA, AssA)
     # The standard library used in academic challenges
     - git+https://github.com/JonathonLuiten/TrackEval.git
+    - tabulate
 
     # Dataset
     - SoccerNet

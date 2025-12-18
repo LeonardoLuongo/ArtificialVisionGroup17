@@ -22,7 +22,7 @@ Directory structure:
     │   └── run.ipynb
     ├── models/
     │   └── training_runs/
-    │       └── soccernet_finetune/
+    │       └── soccernet_high_precision/
     │           ├── args.yaml
     │           └── results.csv
     └── src/
@@ -36,11 +36,16 @@ Directory structure:
         │   ├── grounding_DINO/
         │   │   └── inference.py
         │   └── YOLO/
+        │       ├── freezing_train.py
         │       ├── inference.py
+        │       ├── resume.py
         │       └── train.py
-        └── Eval/
-            ├── run_eval.py
-            └── run_eval_detection_only.py
+        ├── Eval/
+        │   ├── run_eval.py
+        │   └── run_eval_detection_only.py
+        └── utils/
+            ├── __init__.py
+            └── get_best_device.py
 
 ================================================
 FILE: config.py
@@ -253,6 +258,7 @@ decord
 SoccerNet
 git+https://github.com/JonathonLuiten/TrackEval.git
 git+https://github.com/facebookresearch/sam3.git
+scikit-learn
 
 
 
@@ -263,7 +269,7 @@ Error processing notebook: 'text/plain'
 
 
 ================================================
-FILE: models/training_runs/soccernet_finetune/args.yaml
+FILE: models/training_runs/soccernet_high_precision/args.yaml
 ================================================
 task: detect
 mode: train
@@ -271,19 +277,19 @@ model: C:\Users\leona\Documents\AV_Project\ArtificialVisionGroup17\models\yolo12
 data: C:\Users\leona\Documents\AV_Project\ArtificialVisionGroup17\dataset\tracking-2023\dataset_yolo\dataset.yaml
 epochs: 50
 time: null
-patience: 10
-batch: 6
-imgsz: 640
+patience: 100
+batch: 8
+imgsz: 1024
 save: true
 save_period: -1
 cache: false
 device: '0'
-workers: 8
+workers: 4
 project: C:\Users\leona\Documents\AV_Project\ArtificialVisionGroup17\models\training_runs
-name: soccernet_finetune
+name: soccernet_high_precision
 exist_ok: true
 pretrained: true
-optimizer: auto
+optimizer: AdamW
 verbose: true
 seed: 0
 deterministic: true
@@ -295,7 +301,7 @@ resume: false
 amp: true
 fraction: 1.0
 profile: false
-freeze: null
+freeze: 10
 multi_scale: false
 compile: false
 overlap_mask: true
@@ -337,7 +343,7 @@ simplify: true
 opset: null
 workspace: null
 nms: false
-lr0: 0.01
+lr0: 0.0005
 lrf: 0.01
 momentum: 0.937
 weight_decay: 0.0005
@@ -345,7 +351,7 @@ warmup_epochs: 3.0
 warmup_momentum: 0.8
 warmup_bias_lr: 0.1
 box: 7.5
-cls: 0.5
+cls: 1.5
 dfl: 1.5
 pose: 12.0
 kobj: 1.0
@@ -355,7 +361,7 @@ hsv_s: 0.7
 hsv_v: 0.4
 degrees: 0.0
 translate: 0.1
-scale: 0.5
+scale: 0.8
 shear: 0.0
 perspective: 0.0
 flipud: 0.0
@@ -370,15 +376,64 @@ auto_augment: randaugment
 erasing: 0.4
 cfg: null
 tracker: botsort.yaml
-save_dir: C:\Users\leona\Documents\AV_Project\ArtificialVisionGroup17\models\training_runs\soccernet_finetune
+save_dir: C:\Users\leona\Documents\AV_Project\ArtificialVisionGroup17\models\training_runs\soccernet_high_precision
 
 
 
 ================================================
-FILE: models/training_runs/soccernet_finetune/results.csv
+FILE: models/training_runs/soccernet_high_precision/results.csv
 ================================================
 epoch,time,train/box_loss,train/cls_loss,train/dfl_loss,metrics/precision(B),metrics/recall(B),metrics/mAP50(B),metrics/mAP50-95(B),val/box_loss,val/cls_loss,val/dfl_loss,lr/pg0,lr/pg1,lr/pg2
-1,1905.4,1.29083,0.61217,0.90735,0.96479,0.93116,0.96647,0.61493,1.24298,0.57872,0.90169,0.00333274,0.00333274,0.00333274
+1,447.569,1.42475,2.22499,1.05946,0.95868,0.9214,0.96817,0.59674,1.28792,1.94058,1.06499,0.0669119,0.000166272,0.000166272
+2,887.143,1.36768,1.97302,1.03163,0.95799,0.92597,0.97004,0.59467,1.30665,1.98179,1.06837,0.0337387,0.000326346,0.000326346
+3,1317.94,1.36819,1.96584,1.03074,0.95997,0.92524,0.97107,0.61393,1.25688,1.86399,1.05743,0.00055881,0.000479821,0.000479821
+4,1749.57,1.33809,1.94004,1.02651,0.96154,0.92442,0.96987,0.61122,1.28894,1.84921,1.06226,0.0004703,0.0004703,0.0004703
+5,2178.94,1.33052,1.93715,1.0135,0.95649,0.92121,0.96939,0.62146,1.23802,1.84359,1.04046,0.0004604,0.0004604,0.0004604
+6,2607.79,1.32147,1.86688,1.0067,0.945,0.91852,0.9689,0.61528,1.25833,1.8719,1.05105,0.0004505,0.0004505,0.0004505
+7,3037.92,1.3269,1.88704,1.01525,0.95404,0.93059,0.97126,0.6225,1.24813,1.83806,1.04554,0.0004406,0.0004406,0.0004406
+8,3466.62,1.30661,1.85714,1.00729,0.95051,0.91299,0.96921,0.62049,1.24776,1.82743,1.04766,0.0004307,0.0004307,0.0004307
+9,3896.52,1.30312,1.85366,1.00643,0.95512,0.93434,0.97116,0.61975,1.25311,1.81044,1.04269,0.0004208,0.0004208,0.0004208
+10,4325.21,1.30346,1.84591,1.00634,0.95688,0.92377,0.97159,0.634,1.21538,1.80568,1.03421,0.0004109,0.0004109,0.0004109
+11,4754.44,1.29487,1.82269,1.00001,0.93798,0.92601,0.97019,0.61983,1.24011,1.81233,1.03511,0.000401,0.000401,0.000401
+12,5182.95,1.28976,1.80785,0.9958,0.9499,0.92779,0.97172,0.62028,1.25242,1.81158,1.03641,0.0003911,0.0003911,0.0003911
+13,5616.6,1.28064,1.80549,0.99726,0.96338,0.93376,0.97371,0.63449,1.22811,1.7293,1.03506,0.0003812,0.0003812,0.0003812
+14,6046.26,1.28075,1.79029,0.99214,0.96074,0.93508,0.97383,0.62471,1.2663,1.7461,1.04171,0.0003713,0.0003713,0.0003713
+15,6475.1,1.27297,1.77592,0.99174,0.95994,0.93823,0.97481,0.62864,1.25394,1.70134,1.03916,0.0003614,0.0003614,0.0003614
+16,6902.98,1.26282,1.77012,0.98337,0.95679,0.93628,0.97384,0.63151,1.23729,1.72367,1.03672,0.0003515,0.0003515,0.0003515
+17,7332.22,1.26656,1.76802,0.98617,0.96207,0.93803,0.97493,0.63468,1.22819,1.7153,1.02989,0.0003416,0.0003416,0.0003416
+18,7760.29,1.26348,1.76519,0.98723,0.95956,0.9349,0.97411,0.62429,1.27405,1.71117,1.04473,0.0003317,0.0003317,0.0003317
+19,8189.46,1.25605,1.76327,0.98634,0.9576,0.93584,0.97429,0.62858,1.24221,1.76818,1.03298,0.0003218,0.0003218,0.0003218
+20,8617.67,1.25469,1.75562,0.98974,0.9578,0.93848,0.97517,0.62617,1.24876,1.793,1.03722,0.0003119,0.0003119,0.0003119
+21,9046.98,1.24354,1.74703,0.98295,0.9595,0.94142,0.97406,0.62691,1.24121,1.73882,1.03508,0.000302,0.000302,0.000302
+22,9475.05,1.23584,1.72658,0.9843,0.96071,0.94273,0.97532,0.63368,1.23811,1.69519,1.03141,0.0002921,0.0002921,0.0002921
+23,9903.4,1.23422,1.71204,0.98296,0.95972,0.93131,0.97393,0.63677,1.22855,1.71784,1.02759,0.0002822,0.0002822,0.0002822
+24,10331.5,1.23661,1.71899,0.98367,0.9584,0.92701,0.97268,0.63623,1.2044,1.78085,1.02322,0.0002723,0.0002723,0.0002723
+25,10760.6,1.22654,1.70163,0.97535,0.96055,0.94304,0.97691,0.64068,1.23192,1.64138,1.03212,0.0002624,0.0002624,0.0002624
+26,11189.1,1.22765,1.69923,0.97694,0.96461,0.93993,0.97609,0.63883,1.22881,1.66931,1.02809,0.0002525,0.0002525,0.0002525
+27,11619.3,1.22432,1.68023,0.97218,0.96044,0.94294,0.97602,0.6381,1.22186,1.69699,1.02421,0.0002426,0.0002426,0.0002426
+28,12047.2,1.22033,1.6854,0.9793,0.96217,0.9365,0.97504,0.63678,1.23162,1.66291,1.02865,0.0002327,0.0002327,0.0002327
+29,12475.5,1.2175,1.71419,0.97196,0.96138,0.93703,0.97517,0.64064,1.21686,1.67209,1.02421,0.0002228,0.0002228,0.0002228
+30,12903.5,1.20862,1.66255,0.9713,0.9579,0.93953,0.97602,0.63905,1.22365,1.68362,1.02473,0.0002129,0.0002129,0.0002129
+31,13331.1,1.21134,1.68321,0.97011,0.95955,0.93416,0.97451,0.63865,1.21962,1.70244,1.02457,0.000203,0.000203,0.000203
+32,13758.9,1.20666,1.66219,0.97105,0.9592,0.93843,0.97631,0.64161,1.21473,1.67525,1.02512,0.0001931,0.0001931,0.0001931
+33,14186.9,1.20564,1.65228,0.97004,0.96207,0.93476,0.97526,0.63966,1.21864,1.65701,1.02506,0.0001832,0.0001832,0.0001832
+34,14614.5,1.203,1.64672,0.96582,0.96085,0.9376,0.97665,0.63776,1.23375,1.65289,1.02936,0.0001733,0.0001733,0.0001733
+35,15042,1.19375,1.63764,0.96448,0.96039,0.93335,0.97559,0.6419,1.22889,1.63489,1.02736,0.0001634,0.0001634,0.0001634
+36,15470.6,1.19486,1.64102,0.96423,0.96238,0.93903,0.97623,0.64042,1.22618,1.62954,1.02917,0.0001535,0.0001535,0.0001535
+37,15898.6,1.19341,1.61721,0.96263,0.96631,0.94548,0.97785,0.64335,1.22626,1.5961,1.027,0.0001436,0.0001436,0.0001436
+38,16327.1,1.1875,1.63686,0.96185,0.96213,0.94051,0.97615,0.64022,1.23035,1.62712,1.02631,0.0001337,0.0001337,0.0001337
+39,16755.2,1.17982,1.62287,0.96113,0.96086,0.93497,0.97601,0.64319,1.21675,1.65197,1.0227,0.0001238,0.0001238,0.0001238
+40,17183,1.18055,1.6151,0.9603,0.96529,0.94083,0.97646,0.64042,1.22703,1.60732,1.02572,0.0001139,0.0001139,0.0001139
+41,17637.2,1.14196,1.55877,1.00045,0.96135,0.93736,0.9753,0.64043,1.22165,1.62466,1.02363,0.000104,0.000104,0.000104
+42,18061.5,1.13397,1.54957,0.99986,0.96317,0.94016,0.97603,0.64107,1.22981,1.60991,1.0305,9.41e-05,9.41e-05,9.41e-05
+43,18485.6,1.13515,1.54654,0.99803,0.96248,0.94094,0.9755,0.63891,1.22657,1.62246,1.02637,8.42e-05,8.42e-05,8.42e-05
+44,18910.5,1.12502,1.53339,0.99562,0.96535,0.9419,0.97654,0.64281,1.22792,1.596,1.02637,7.43e-05,7.43e-05,7.43e-05
+45,19333.5,1.12433,1.52733,0.99292,0.96351,0.93808,0.97622,0.64354,1.22052,1.61936,1.02428,6.44e-05,6.44e-05,6.44e-05
+46,19757.6,1.11991,1.52631,0.99347,0.96395,0.9427,0.97615,0.64031,1.23533,1.59188,1.02949,5.45e-05,5.45e-05,5.45e-05
+47,20182.9,1.12514,1.51165,0.99349,0.96352,0.93894,0.97636,0.64475,1.22346,1.60763,1.02576,4.46e-05,4.46e-05,4.46e-05
+48,20606.8,1.11644,1.50302,0.99268,0.96601,0.94136,0.97677,0.64802,1.2217,1.55978,1.02792,3.47e-05,3.47e-05,3.47e-05
+49,21030.6,1.11139,1.4796,0.99196,0.96444,0.93941,0.97655,0.64586,1.22468,1.5829,1.02631,2.48e-05,2.48e-05,2.48e-05
+50,21455.5,1.11158,1.4961,0.99229,0.96402,0.94005,0.97696,0.64517,1.2252,1.57847,1.02707,1.49e-05,1.49e-05,1.49e-05
 
 
 
@@ -485,6 +540,10 @@ from tqdm import tqdm
 ROOT_DIR = Path(__file__).parent.parent.parent.resolve()
 sys.path.append(str(ROOT_DIR))
 
+
+# Definiamo il tasso di campionamento (1 frame ogni 25)
+TRAIN_SUBSAMPLE_RATE = 10
+
 # Importiamo le costanti definite in config
 from config import DATASET_TR23_TRAIN, YOLO_DATASET_PATH, SPLIT_DIR
 
@@ -586,6 +645,13 @@ def convert_dataset_from_manifest():
             # D. Copiamo le immagini e creiamo i file label
             for img_file in img_source_dir.glob("*.jpg"):
                 frame_idx = int(img_file.stem) # es. '000001' -> 1
+
+                if split_name == 'train':
+                    # Esempio: tiene frame 1, 11, 21... (se il resto della div Ã¨ 1)
+                    # Oppure frame 10, 20, 30... (se resto Ã¨ 0). 
+                    # Usiamo (frame_idx - 1) % RATE == 0 per prendere il primo frame sicuro.
+                    if (frame_idx - 1) % TRAIN_SUBSAMPLE_RATE != 0:
+                        continue 
                 
                 # Nome univoco: SequenceName_ImageName.jpg
                 new_filename = f"{seq_name}_{img_file.name}"
@@ -650,29 +716,32 @@ from torchvision import models, transforms
 from PIL import Image
 from pathlib import Path
 from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
 from collections import defaultdict
-import shutil
+from tqdm import tqdm
 
 # Setup path
 ROOT_DIR = Path(__file__).parent.parent.parent.resolve()
 sys.path.append(str(ROOT_DIR))
-from config import DATASET_TR23_TRAIN, SPLIT_DIR
+from config import DATASET_TR23_TRAIN, SPLIT_DIR, OUTPUT_DIR
+from src.utils.get_best_device import get_best_device
 
 # Parametri
 VAL_RATIO = 0.2
-N_CLUSTERS = 5  # Quanti "tipi" di video diversi ci aspettiamo (es. stadi diversi)
 SEED = 42
+FRAMES_PER_SEQ = 3  
+MIN_CLUSTERS = 2
+MAX_CLUSTERS = 10   
 
 def extract_features(dataset_path):
-    """
-    Usa una ResNet18 pre-addestrata per estrarre un vettore di caratteristiche
-    dalla prima immagine di ogni sequenza.
-    """
-    print("Caricamento modello per estrazione feature (ResNet18)...")
-    # Usiamo ResNet18: leggera e veloce, sufficiente per distinguere stadi/luci
+    device = get_best_device()
+    print(f"Caricamento modello ResNet18 su {device}...")
+    
     model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
-    # Rimuoviamo l'ultimo layer (classificazione) per avere solo le feature
-    model = nn.Sequential(*list(model.children())[:-1])
+    model = nn.Sequential(*list(model.children())[:-1]) 
+    model.to(device)
     model.eval()
     
     preprocess = transforms.Compose([
@@ -682,93 +751,145 @@ def extract_features(dataset_path):
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
 
-    features = []
-    sequences = []
+    features_dict = {} # Mappa seq_name -> feature_vector
     
     seq_dirs = sorted([s for s in os.listdir(dataset_path) if (dataset_path / s).is_dir()])
     
     print(f"Estrazione feature da {len(seq_dirs)} sequenze...")
     
     with torch.no_grad():
-        for seq in seq_dirs:
+        for seq in tqdm(seq_dirs):
             img_dir = dataset_path / seq / "img1"
-            # Prendi la prima immagine disponibile
-            img_path = next(img_dir.glob("*.jpg"), None)
+            all_images = sorted(list(img_dir.glob("*.jpg")))
             
-            if img_path:
+            if not all_images: continue
+            
+            indices = np.linspace(0, len(all_images) - 1, FRAMES_PER_SEQ, dtype=int)
+            selected_imgs = [all_images[i] for i in indices]
+            
+            seq_feats = []
+            for img_path in selected_imgs:
                 try:
                     img = Image.open(img_path).convert('RGB')
-                    img_t = preprocess(img).unsqueeze(0)
-                    emb = model(img_t).flatten().numpy()
-                    
-                    features.append(emb)
-                    sequences.append(seq)
-                except Exception as e:
-                    print(f"Errore lettura {seq}: {e}")
+                    img_t = preprocess(img).unsqueeze(0).to(device)
+                    emb = model(img_t).flatten().cpu().numpy()
+                    seq_feats.append(emb)
+                except Exception:
+                    pass
 
-    return sequences, np.array(features)
+            if seq_feats:
+                avg_feat = np.mean(seq_feats, axis=0)
+                features_dict[seq] = avg_feat
+
+    return features_dict
+
+def find_best_k(features, min_k=2, max_k=10):
+    print("\n--- Ricerca Automatica K (Clustering) ---")
+    best_k = min_k
+    best_score = -1
+    best_labels = None
+    
+    limit_k = min(len(features), max_k)
+    if len(features) < 2: return 1, np.zeros(len(features))
+
+    for k in range(min_k, limit_k + 1):
+        kmeans = KMeans(n_clusters=k, random_state=SEED, n_init=10)
+        labels = kmeans.fit_predict(features)
+        score = silhouette_score(features, labels)
+        if score > best_score:
+            best_score = score
+            best_k = k
+            best_labels = labels
+            
+    print(f"--> Miglior K trovato: {best_k} (Silhouette Score: {best_score:.4f})")
+    return best_k, best_labels
+
+def visualize_split_quality(features_dict, train_seqs, val_seqs):
+    """
+    Genera un grafico 2D per mostrare quanto Train e Val si sovrappongono.
+    """
+    print("\nGenerazione grafico di qualitÃ  dello split...")
+    
+    all_seqs = train_seqs + val_seqs
+    X = np.array([features_dict[s] for s in all_seqs])
+    
+    # Riduciamo a 2 dimensioni con PCA per poter disegnare
+    pca = PCA(n_components=2)
+    X_pca = pca.fit_transform(X)
+    
+    # Creiamo due liste di coordinate
+    train_indices = [i for i, s in enumerate(all_seqs) if s in train_seqs]
+    val_indices = [i for i, s in enumerate(all_seqs) if s in val_seqs]
+    
+    plt.figure(figsize=(10, 8))
+    
+    # Disegna Train (Blu)
+    plt.scatter(X_pca[train_indices, 0], X_pca[train_indices, 1], 
+                c='blue', alpha=0.5, label='Train Set', s=50)
+    
+    # Disegna Val (Rosso)
+    plt.scatter(X_pca[val_indices, 0], X_pca[val_indices, 1], 
+                c='red', marker='x', alpha=0.9, label='Val Set', s=70)
+    
+    plt.title(f"Distribuzione Train vs Val (PCA)\nObiettivo: I punti rossi devono essere ben distribuiti tra i blu")
+    plt.xlabel("Principal Component 1")
+    plt.ylabel("Principal Component 2")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    
+    output_plot = OUTPUT_DIR / "split_quality_check.png"
+    if not OUTPUT_DIR.exists(): OUTPUT_DIR.mkdir(parents=True)
+    
+    plt.savefig(output_plot)
+    print(f"--> Grafico salvato in: {output_plot}")
+    print("    APRILO! Se i punti rossi coprono bene l'area dei blu, lo split Ã¨ ottimo.")
 
 def create_smart_splits():
     if not DATASET_TR23_TRAIN.exists():
-        print("Dataset non trovato.")
+        print(f"Dataset non trovato in {DATASET_TR23_TRAIN}")
         return
 
-    # 1. Estrai Features Visive
-    sequences, features = extract_features(DATASET_TR23_TRAIN)
+    # 1. Estrazione Features
+    features_map = extract_features(DATASET_TR23_TRAIN)
+    sequences = sorted(list(features_map.keys()))
+    features_matrix = np.array([features_map[s] for s in sequences])
     
-    # 2. Clustering (K-Means)
-    # Raggruppa i video in N gruppi basandosi sulla somiglianza visiva
-    print(f"Esecuzione K-Means Clustering con {N_CLUSTERS} cluster...")
-    kmeans = KMeans(n_clusters=N_CLUSTERS, random_state=SEED, n_init=10)
-    clusters = kmeans.fit_predict(features)
+    if len(sequences) == 0: return
+
+    # 2. Clustering
+    n_clusters, clusters = find_best_k(features_matrix, MIN_CLUSTERS, MAX_CLUSTERS)
     
-    # Organizza sequenze per cluster
     clustered_seqs = defaultdict(list)
     for seq, cluster_id in zip(sequences, clusters):
         clustered_seqs[cluster_id].append(seq)
         
     # 3. Stratified Split
-    # Prendi il 20% da OGNI cluster per metterlo nel validation
     train_final = []
     val_final = []
     
-    print("\n--- Analisi Distribuzione Cluster ---")
+    print("\n--- Generazione Split ---")
     for cid in sorted(clustered_seqs.keys()):
         seqs_in_cluster = clustered_seqs[cid]
-        # Mischia all'interno del cluster
         random.seed(SEED)
         random.shuffle(seqs_in_cluster)
         
         n_val = int(len(seqs_in_cluster) * VAL_RATIO)
-        # Assicuriamoci di avere almeno 1 val se il cluster Ã¨ piccolo ma > 1
-        if n_val == 0 and len(seqs_in_cluster) > 1:
-            n_val = 1
+        if n_val == 0 and len(seqs_in_cluster) > 1: n_val = 1
             
         val_subset = seqs_in_cluster[:n_val]
         train_subset = seqs_in_cluster[n_val:]
         
         val_final.extend(val_subset)
         train_final.extend(train_subset)
-        
-        print(f"Cluster {cid}: Totale {len(seqs_in_cluster)} -> Train: {len(train_subset)}, Val: {len(val_subset)}")
-        # (Opzionale) Stampa qualche nome per capire cosa c'Ã¨ nel cluster
-        # print(f"   Esempi: {seqs_in_cluster[:3]}")
+        print(f"Cluster {cid}: {len(train_subset)} Train, {len(val_subset)} Val")
 
-    # 4. Salva i Manifest
+    # 4. Salva i file
     SPLIT_DIR.mkdir(parents=True, exist_ok=True)
+    with open(SPLIT_DIR / "train.txt", "w") as f: f.write("\n".join(sorted(train_final)))
+    with open(SPLIT_DIR / "val.txt", "w") as f: f.write("\n".join(sorted(val_final)))
     
-    with open(SPLIT_DIR / "train.txt", "w") as f:
-        f.write("\n".join(sorted(train_final)))
-        
-    with open(SPLIT_DIR / "val.txt", "w") as f:
-        f.write("\n".join(sorted(val_final)))
-        
-    print("\n------------------------------------------------")
-    print(f"Smart Split Completato.")
-    print(f"Train: {len(train_final)} sequenze")
-    print(f"Val:   {len(val_final)} sequenze")
-    print(f"I set sono bilanciati visivamente per coprire {N_CLUSTERS} tipologie di scenari.")
-    print("------------------------------------------------")
+    # 5. VERIFICA VISIVA (Nuovo!)
+    visualize_split_quality(features_map, train_final, val_final)
 
 if __name__ == "__main__":
     create_smart_splits()
@@ -851,133 +972,216 @@ if __name__ == "__main__":
 FILE: src/Detector/grounding_DINO/inference.py
 ================================================
 import os
-import shutil
 import sys
+import shutil
 import torch
+import warnings
 from PIL import Image
 from transformers import AutoProcessor, AutoModelForZeroShotObjectDetection
+from pathlib import Path
 
-# Importa le tue config
-from config import * 
+# --- SETUP PATH ---
+current_file = Path(__file__).resolve()
+project_root = current_file.parent.parent.parent.parent
+sys.path.append(str(project_root))
+
+warnings.filterwarnings("ignore", category=UserWarning, module="torchvision")
+
+try:
+    from config import *
+except ImportError:
+    print("ERRORE CRITICO: Non riesco a trovare 'config.py'.")
+    sys.exit(1)
 
 def run_grounding_dino_detection():
-    # --- CONFIGURAZIONE MODELLO ---
-    # Usiamo "grounding-dino-base" (piÃ¹ preciso) o "grounding-dino-tiny" (piÃ¹ veloce)
+    # Setup del modello
     model_id = "IDEA-Research/grounding-dino-base"
     
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"Caricamento Grounding DINO ({model_id}) su: {device}...")
+    if torch.backends.mps.is_available():
+        device = 'mps'
+        print("Uso accelerazione Apple Silicon (MPS)")
+    elif torch.cuda.is_available():
+        device = 'cuda'
+        print("Uso accelerazione CUDA")
+    else:
+        device = 'cpu'
+        print("Uso CPU (Lento)")
 
+    print(f"Caricamento Grounding DINO ({model_id})...")
+    
     processor = AutoProcessor.from_pretrained(model_id)
     model = AutoModelForZeroShotObjectDetection.from_pretrained(model_id).to(device)
 
-    # IL PROMPT: Cosa cercare. 
-    # Ãˆ importante mettere il punto "." alla fine per Grounding DINO.
-    text_prompt = "person." 
-    
-    # Soglie
-    BOX_THRESHOLD = 0.30  # Confidenza minima per considerare un box
-    TEXT_THRESHOLD = 0.25 # Confidenza minima per associare la parola "person" al box
+    TEXT_PROMPT = "person."  
+    BOX_THRESHOLD = 0.35   
+    TEXT_THRESHOLD = 0.25  
 
-    base_path = DATASET_TR23_TEST
-    output_folder = DETECTOR_OUTPUT_DIR / "grounding_dino"
+    base_path = os.path.join(DATASET_TR23_TEST, "test")
+    output_folder = Path(DETECTOR_OUTPUT_DIR) / "grounding_dino_base"
     
-    # --- GESTIONE CARTELLE (Identica al tuo script) ---
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
-    else:
-        if len(os.listdir(output_folder)) > 0:
-            print(f"\nATTENZIONE: La cartella '{output_folder}' non Ã¨ vuota.")
-            conferma = input("Vuoi eliminare TUTTI i file e continuare? (y/n): ").strip().lower()
-            if conferma in ['s', 'si', 'y', 'yes']:
-                for filename in os.listdir(output_folder):
-                    file_path = os.path.join(output_folder, filename)
-                    try:
-                        if os.path.isfile(file_path) or os.path.islink(file_path):
-                            os.unlink(file_path)
-                        elif os.path.isdir(file_path):
-                            shutil.rmtree(file_path)
-                    except Exception as e:
-                        print(f"Errore eliminazione {file_path}: {e}")
-            else:
-                sys.exit()
-
+    print(f"\n--- DEBUG PATH ---")
+    print(f"Path Dataset: {base_path}")
+    print(f"Path Output:  {output_folder}")
+    
     if not os.path.exists(base_path):
-        print(f"Errore: Percorso {base_path} non trovato.")
+        print(f"ERRORE: La cartella del dataset NON esiste: {base_path}")
         return
 
     sequences = os.listdir(base_path)
+    print(f"Ho trovato {len(sequences)} elementi nella cartella del dataset.")
 
-    # --- CICLO SEQUENZE ---
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    files_created = 0
+
     for seq_name in sequences:
         seq_path = os.path.join(base_path, seq_name)
         img_source = os.path.join(seq_path, 'img1')
 
-        if os.path.isdir(seq_path) and os.path.exists(img_source):
-            print(f"--> Elaborazione sequenza: {seq_name}")
-            res_file_path = os.path.join(output_folder, f"{seq_name}.txt")
-            
-            # Ordina le immagini per sicurezza
-            image_files = sorted([f for f in os.listdir(img_source) if f.endswith(('.jpg', '.png', '.jpeg'))])
-            
-            with open(res_file_path, 'w') as f:
-                for img_name in image_files:
-                    img_path = os.path.join(img_source, img_name)
-                    frame_id = int(img_name.split('.')[0])
-                    
-                    # 1. Carica immagine con PIL (richiesto da Transformers)
-                    try:
-                        image = Image.open(img_path).convert("RGB")
-                    except Exception as e:
-                        print(f"Errore lettura {img_name}: {e}")
-                        continue
+        if not os.path.isdir(seq_path): continue
+        if not os.path.exists(img_source):
+            print(f"  -> SALTATA {seq_name}: Manca cartella img1")
+            continue
+        
+        # Filtra solo immagini vere
+        image_files = sorted([f for f in os.listdir(img_source) if f.lower().endswith(('.jpg', '.jpeg', '.png'))])
+        num_imgs = len(image_files)
+        
+        if num_imgs == 0:
+            print(f"  -> SALTATA {seq_name}: Cartella vuota")
+            continue
 
-                    # 2. Pre-process e Inferenza
-                    inputs = processor(images=image, text=text_prompt, return_tensors="pt").to(device)
+        print(f"\nAnalisi sequenza: {seq_name} ({num_imgs} immagini)")
+        
+        res_file_path = os.path.join(output_folder, f"{seq_name}.txt")
+        
+        with open(res_file_path, 'w') as f:
+            lines_written = 0
+            
+            for i, img_name in enumerate(image_files):
+                if i % 10 == 0: 
+                    print(f"     Elaborazione frame {i}/{num_imgs}...", end='\r')
+
+                img_path = os.path.join(img_source, img_name)
+                
+                try:
+                    frame_id = int(img_name.split('.')[0])
+                except ValueError:
+                    continue 
+
+                try:
+                    image_pil = Image.open(img_path).convert("RGB")
+                    
+                    inputs = processor(images=image_pil, text=TEXT_PROMPT, return_tensors="pt").to(device)
                     
                     with torch.no_grad():
                         outputs = model(**inputs)
 
-                    # 3. Post-process (converte output grezzi in coordinate pixel)
-                    # target_sizes serve per scalare i box normalizzati alle dimensioni reali dell'immagine
-                    width, height = image.size
+                    width, height = image_pil.size
+                    
                     results = processor.post_process_grounded_object_detection(
                         outputs,
                         inputs.input_ids,
-                        box_threshold=BOX_THRESHOLD,
-                        text_threshold=TEXT_THRESHOLD,
                         target_sizes=[(height, width)]
                     )[0]
 
-                    # 4. Scrittura risultati
-                    # results['boxes'] Ã¨ in formato xyxy (x_min, y_min, x_max, y_max)
                     for score, label, box in zip(results["scores"], results["labels"], results["boxes"]):
                         
-                        # Il label restituito Ã¨ la stringa del prompt (es. "person")
-                        # Se il prompt Ã¨ semplice "person.", controlliamo solo che la box sia valida
+                        if score.item() < BOX_THRESHOLD:
+                            continue
                         
-                        # Conversione da xyxy a xywh (Top-Left X, Top-Left Y, Width, Height)
-                        x1, y1, x2, y2 = box.cpu().numpy()
-                        
-                        w = x2 - x1
-                        h = y2 - y1
-                        # x1 e y1 sono giÃ  le coordinate Top-Left
-                        
-                        conf = score.item()
-                        
-                        # Filtro aggiuntivo: a volte DINO rileva label parziali se il prompt Ã¨ complesso,
-                        # ma qui con "person." il filtro Ã¨ implicito nel modello.
-                        if label == "person":
-                            line = f"{frame_id},-1,{x1:.2f},{y1:.2f},{w:.2f},{h:.2f},{conf:.4f},-1,-1,-1\n"
+                        if "person" in label:
+                            x1, y1, x2, y2 = box.cpu().numpy()
+                            w = x2 - x1
+                            h = y2 - y1
+                            conf = score.item()
+
+                            # Scrittura formato MOT
+                            # frame_id, id_obj(-1), x1, y1, w, h, conf, -1, -1, -1
+                            line = f"{frame_id},-1,{x1:.2f},{y1:.2f},{w:.2f},{h:.2f},{conf:.4f},-1,1,-1\n"
                             f.write(line)
+                            lines_written += 1
+                            
+                except Exception as e:
+                    print(f"\nErrore nel frame {img_name}: {e}")
+                    continue
 
-            print(f"Salvati risultati in: {res_file_path}")
+            print(f"     COMPLETATO! Scritte {lines_written} righe.        ")
+            files_created += 1
 
-            with open(SEQMAP_FILE, 'a') as seqmap_file:
-                seqmap_file.write(f"{seq_name}\n")
+    print(f"\n--- FINE ---")
+    print(f"File salvati in: {output_folder}")
 
 if __name__ == "__main__":
     run_grounding_dino_detection()
+
+
+================================================
+FILE: src/Detector/YOLO/freezing_train.py
+================================================
+# src/Detector/YOLO/train_tuned.py
+from ultralytics import YOLO
+from ultralytics.utils import metrics
+from pathlib import Path
+import sys
+
+# Setup path
+ROOT_DIR = Path(__file__).parent.parent.parent.parent.resolve()
+sys.path.append(str(ROOT_DIR))
+from config import *
+
+def custom_fitness(x):
+    """
+    x = [P, R, mAP@50, mAP@50-95]
+    Di default YOLO usa: 0.1 * mAP@50 + 0.9 * mAP@50-95
+    Noi usiamo: 1.0 * mAP@50 + 0.0 * mAP@50-95
+    """
+    return x[2] # Restituisce solo mAP@50
+
+# Sovrascriviamo la funzione della libreria
+metrics.fitness = custom_fitness
+
+def train_yolo_tuned():
+    dataset_yaml = YOLO_DATASET_PATH / "dataset.yaml"
+    
+    model_name = 'yolo12m.pt' 
+    model = YOLO(MODEL_PATH / model_name) 
+
+    print(f"Avvio Training Tuned (Loss Custom) di {model_name}...")
+    
+    results = model.train(
+        data=str(dataset_yaml),
+        epochs=50,
+        imgsz=1024,
+        batch=8,
+        
+        # --- TUNING DEI PESI DELLA LOSS (Il tuo tocco magico) ---
+        box=7.5,    # (Default): Allows slightly looser boxes, increases recall
+        cls=1.5,    # INCREASED: Penalize missing players (FN) heavily
+        dfl=1.5,    # SLIGHTLY REDUCED: We don't need pixel-perfect distribution
+
+        # --- Augmentation to help small objects ---
+        scale=0.8,  # Allow significant zooming in during training
+        degrees=0.0,
+            
+        # --- Altri parametri di stabilitÃ  ---
+        optimizer='AdamW',
+        lr0=0.0005, 
+        freeze=10,  # Congeliamo il backbone per stabilitÃ 
+        
+        project=str(MODEL_PATH / "training_runs"),
+        name='soccernet_high_precision',
+        exist_ok=True,
+        plots=True,
+        device=0,
+        workers=4
+    )
+    print("Training completato.")
+    
+
+if __name__ == "__main__":
+    train_yolo_tuned()
 
 
 ================================================
@@ -989,12 +1193,14 @@ import torch
 from config import *
 import shutil
 import sys
+from src.utils.get_best_device import get_best_device
 
 def run_detection_and_save_txt():
     # Carica il modello
-    model_name = 'yolo12m.pt'  # Puoi cambiare con il percorso del tuo modello
-    model = YOLO(MODEL_PATH / model_name) 
-    model.to('cuda' if torch.cuda.is_available() else 'cpu')
+    DEVICE = get_best_device()
+    model_name = 'best.pt'  # Puoi cambiare con il percorso del tuo modello
+    model = YOLO(MODEL_PATH / "training_runs" / "soccernet_high_precision" / "weights" / model_name) 
+    model.to(DEVICE)
     print(f"Modello caricato su: {model.device}")
 
     base_path = DATASET_TR23_TEST
@@ -1043,7 +1249,7 @@ def run_detection_and_save_txt():
             
             # Eseguiamo l'inferenza usando lo stream per non saturare la RAM
             # stream=True restituisce un generatore
-            results = model.predict(source=img_source, conf=0.25, verbose=False, stream=True, device=0, classes=[0])
+            results = model.predict(source=img_source, conf=0.35, imgsz=1280, verbose=False, stream=True, device=0, classes=[0])
             
             with open(res_file_path, 'w') as f:
                 for result in results:
@@ -1087,6 +1293,23 @@ if __name__ == "__main__":
 
 
 ================================================
+FILE: src/Detector/YOLO/resume.py
+================================================
+from ultralytics import YOLO
+from config import MODEL_PATH
+from utils.get_best_device import get_best_device
+
+# Il blocco if __name__ == '__main__': Ã¨ OBBLIGATORIO su Windows
+if __name__ == '__main__':
+    # Carica il peso 'last.pt' invece di 'yolov8n.pt'
+    model = YOLO(MODEL_PATH / "training_runs" / "soccernet_finetune" / "weights" / "last.pt")
+    model.to(get_best_device())
+    
+    # Il parametro resume=True Ã¨ fondamentale
+    results = model.train(resume=True)
+
+
+================================================
 FILE: src/Detector/YOLO/train.py
 ================================================
 # src/Detector/YOLO/train.py
@@ -1119,13 +1342,15 @@ def train_yolo():
         data=str(dataset_yaml),
         epochs=50,             # Regola in base al tempo (50-100 Ã¨ buono)
         imgsz=640,             # O 1280 se hai GPU potente e vuoi vedere i piccoli dettagli
-        batch=6,              # Regola in base alla VRAM
+        batch=8,              # Regola in base alla VRAM
         project=str(MODEL_PATH / "training_runs"),
         name='soccernet_finetune',
         exist_ok=True,
         device=0,              # GPU id
         plots=True,
-        patience=10            # Early stopping se non migliora per 10 epoche
+        patience=10,            # Early stopping se non migliora per 10 epoche
+        cache=False,
+        workers=4
     )
     
     print("Training completato.")
@@ -1143,22 +1368,17 @@ import os
 import numpy as np
 from trackeval.datasets import MotChallenge2DBox
 from trackeval.metrics import HOTA
+import trackeval
 from config import *
 
 def run_evaluation():
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = ROOT_DIR
-    
-    # --- CORREZIONE QUI SOTTO ---
+    # --- CONFIGURAZIONE PATH ---
     # GT_FOLDER deve puntare alla cartella che CONTIENE le sequenze (SNMOT-XXX)
-    # Non aggiungere "gt" qui.
     gt_folder_abs = DATASET_TR23_TEST 
-    
     trackers_folder_abs = DETECTOR_OUTPUT_DIR 
     seqmap_folder_abs = SEQMAP_DIR 
     
     print(f"Cercando GT in: {gt_folder_abs}") 
-    # Dovrebbe stampare: .../dataset/tracking-2023/test
     print(f"Cercando Seqmap in: {seqmap_folder_abs}")
 
     # Verifica veloce
@@ -1168,7 +1388,7 @@ def run_evaluation():
     eval_config = {
         'USE_PARALLEL': False,
         'NUM_PARALLEL_CORES': 1,
-        'PRINT_RESULTS': True,
+        'PRINT_RESULTS': False, # Mettiamo False per stampare solo i nostri dati puliti
         'PRINT_ONLY_COMBINED': False,
         'OUTPUT_SUMMARY': True,
         'OUTPUT_EMPTY_CLASSES': False,
@@ -1189,64 +1409,61 @@ def run_evaluation():
         'DO_PREPROC': False,
         'TRACKER_SUB_FOLDER': '', 
         'OUTPUT_SUB_FOLDER': '',
-        "OUTPUT_SUMMARY": True, 
-        
-        # --- MODIFICA QUI ---
-        # Imposta a True perchÃ© il tuo gt_folder_abs include giÃ  "/test"
+        'OUTPUT_SUMMARY': True, 
         'SKIP_SPLIT_FOL': True, 
-        
         'SEQ_INFO': None,
         'SUB_FOLDER': 'gt', 
         'SEQMAP_FOLDER': seqmap_folder_abs, 
         'SEQMAP_FILE': SEQMAP_FILE, 
     }
     
+    # NOTA: Qui NON chiamiamo piÃ¹ fix_ids_for_detection_only()
+    # perchÃ© per il tracking servono gli ID originali del tuo algoritmo!
+    
     dataset = MotChallenge2DBox(dataset_config)
     hota = HOTA()
     
-    import trackeval
     evaluator = trackeval.Evaluator(eval_config)
     try:
         np.float = float
-        np.int = int   # Spesso serve anche questo
+        np.int = int
     except AttributeError:
         pass
+        
     results = evaluator.evaluate([dataset], [hota])
     
     if results:
-        # 1. Ottieni il dizionario del Dataset (livello 'MotChallenge2DBox')
         dataset_res = results[0]
         dataset_name = list(dataset_res.keys())[0]
-        
-        # 2. Ottieni il dizionario del Tracker (livello 'yolo')
         tracker_res = dataset_res[dataset_name]
         tracker_name = list(tracker_res.keys())[0]
-        
-        # 3. Ottieni il dizionario delle Sequenze
         sequences_res = tracker_res[tracker_name]
         
-        # Qui hai una scelta: vuoi la media totale o una sequenza specifica?
-        # TrackEval solitamente crea una chiave 'COMBINED_SEQ' per la media.
-        # Se non c'Ã¨, prendiamo la prima sequenza disponibile (es. SNMOT-117).
         seq_name = 'COMBINED_SEQ'
         if seq_name not in sequences_res:
             seq_name = list(sequences_res.keys())[0]
             print(f"Attenzione: 'COMBINED_SEQ' non trovato. Mostro i risultati per: {seq_name}")
         
-        # 4. Finalmente accediamo alla classe 'pedestrian' e alle metriche 'HOTA'
         # Percorso: Dataset -> Tracker -> Sequence -> Class -> Metric
         stats = sequences_res[seq_name]['pedestrian']['HOTA']
         
-        deta_score = stats['DetA'][0] * 100 
-        hota_score = stats['HOTA'][0] * 100
+        # --- CORREZIONE CRUCIALE: INDICE 9 ---
+        # TrackEval calcola 19 soglie (0.05 ... 0.95).
+        # index 0 = 0.05
+        # index 9 = 0.50 (Quello che vuole la competizione)
+        idx = 9
 
-        print(f"\nMetriche finali ({tracker_name} - {seq_name}):")
+        deta_score = stats['DetA'][idx] * 100 
+        assa_score = stats['AssA'][idx] * 100
+        hota_score = stats['HOTA'][idx] * 100
+
+        print(f"\nMetriche Tracking @ IoU 0.5 ({tracker_name} - {seq_name}):")
+        print(f"HOTA: {hota_score:.2f}%  <-- QUESTO Ã¨ il valore per la classifica")
         print(f"DetA: {deta_score:.2f}%")
-        print(f"HOTA: {hota_score:.2f}%")
+        print(f"AssA: {assa_score:.2f}%")
         
-        # Se vuoi vedere anche DetRe (Recall) e DetPr (Precision) dato che ti interessano
-        det_re = stats['DetRe'][0] * 100
-        det_pr = stats['DetPr'][0] * 100
+        det_re = stats['DetRe'][idx] * 100
+        det_pr = stats['DetPr'][idx] * 100
         print(f"DetRe (Recall): {det_re:.2f}%")
         print(f"DetPr (Precision): {det_pr:.2f}%")
 
@@ -1262,17 +1479,17 @@ import os
 import numpy as np
 from trackeval.datasets import MotChallenge2DBox
 from trackeval.metrics import HOTA
-from config import *
-
+import trackeval
+from config import * # Assicurati che config.py sia accessibile
 
 def fix_ids_for_detection_only(trackers_folder):
     """
     Scansiona i file .txt dei risultati e assegna un ID univoco a ogni riga.
-    Questo serve perchÃ© TrackEval crasha se vede ID duplicati (es. -1) nello stesso frame.
+    NOTA: Questo distrugge le informazioni di tracking temporale (AssA sarÃ  ~0),
+    ma Ã¨ perfetto se ti interessa calcolare SOLO la DetA (Detection Accuracy).
     """
     import glob
     
-    # Cerca tutti i file .txt ricorsivamente nella cartella dei tracker
     txt_files = glob.glob(os.path.join(trackers_folder, '**', '*.txt'), recursive=True)
     
     if not txt_files:
@@ -1286,48 +1503,34 @@ def fix_ids_for_detection_only(trackers_folder):
             lines = f.readlines()
         
         new_lines = []
-        # Usa un contatore globale o per riga per garantire unicitÃ  assoluta
         for i, line in enumerate(lines):
             parts = line.strip().split(',')
             if len(parts) < 6: continue
             
-            # --- TRUCCO ---
-            # Sostituisci la colonna ID (indice 1) con un numero progressivo (i+1)
-            # Formato MOT: <frame>, <id>, <bb_left>, <bb_top>, <width>, <height>, ...
+            # Assegna un ID progressivo unico per riga (rompe il tracking, ok per detection)
             parts[1] = str(i + 1) 
             
             new_lines.append(','.join(parts) + '\n')
             
-        # Sovrascrivi il file (o salvane una copia se preferisci)
         with open(txt_file, 'w') as f:
             f.writelines(new_lines)
     
     print("Correzione ID completata.")
 
 def run_evaluation():
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = ROOT_DIR
-    
-    # --- CORREZIONE QUI SOTTO ---
-    # GT_FOLDER deve puntare alla cartella che CONTIENE le sequenze (SNMOT-XXX)
-    # Non aggiungere "gt" qui.
+    # --- CONFIGURAZIONE PATH ---
     gt_folder_abs = DATASET_TR23_TEST 
-    
     trackers_folder_abs = DETECTOR_OUTPUT_DIR 
     seqmap_folder_abs = SEQMAP_DIR 
     
-    print(f"Cercando GT in: {gt_folder_abs}") 
-    # Dovrebbe stampare: .../dataset/tracking-2023/test
-    print(f"Cercando Seqmap in: {seqmap_folder_abs}")
+    print(f"GT Folder: {gt_folder_abs}") 
+    print(f"Seqmap Folder: {seqmap_folder_abs}")
 
-    # Verifica veloce
-    if not os.path.exists(os.path.join(gt_folder_abs, 'SNMOT-116', 'seqinfo.ini')):
-        print("ATTENZIONE: seqinfo.ini non trovato nemmeno nel path assoluto per 116!")
-
+    # Configurazione di base per l'evaluator
     eval_config = {
         'USE_PARALLEL': False,
         'NUM_PARALLEL_CORES': 1,
-        'PRINT_RESULTS': True,
+        'PRINT_RESULTS': False,  # Mettiamo False per non intasare la console, stampiamo noi i dati custom
         'PRINT_ONLY_COMBINED': False,
         'OUTPUT_SUMMARY': True,
         'OUTPUT_EMPTY_CLASSES': False,
@@ -1348,67 +1551,99 @@ def run_evaluation():
         'DO_PREPROC': False,
         'TRACKER_SUB_FOLDER': '', 
         'OUTPUT_SUB_FOLDER': '',
-        "OUTPUT_SUMMARY": True, 
-        
-        # --- MODIFICA QUI ---
-        # Imposta a True perchÃ© il tuo gt_folder_abs include giÃ  "/test"
+        'OUTPUT_SUMMARY': True, 
         'SKIP_SPLIT_FOL': True, 
-        
         'SEQ_INFO': None,
         'SUB_FOLDER': 'gt', 
         'SEQMAP_FOLDER': seqmap_folder_abs, 
         'SEQMAP_FILE': SEQMAP_FILE, 
     }
+
+    # Eseguiamo la correzione degli ID per calcolare la Detection pura
     fix_ids_for_detection_only(trackers_folder_abs)
+    
     dataset = MotChallenge2DBox(dataset_config)
     hota = HOTA()
     
-    import trackeval
     evaluator = trackeval.Evaluator(eval_config)
+    
+    # Fix per compatibilitÃ  numpy
     try:
         np.float = float
-        np.int = int   # Spesso serve anche questo
+        np.int = int
     except AttributeError:
         pass
+
+    # Esecuzione
     results = evaluator.evaluate([dataset], [hota])
     
     if results:
-        # 1. Ottieni il dizionario del Dataset (livello 'MotChallenge2DBox')
         dataset_res = results[0]
         dataset_name = list(dataset_res.keys())[0]
-        
-        # 2. Ottieni il dizionario del Tracker (livello 'yolo')
         tracker_res = dataset_res[dataset_name]
         tracker_name = list(tracker_res.keys())[0]
-        
-        # 3. Ottieni il dizionario delle Sequenze
         sequences_res = tracker_res[tracker_name]
         
-        # Qui hai una scelta: vuoi la media totale o una sequenza specifica?
-        # TrackEval solitamente crea una chiave 'COMBINED_SEQ' per la media.
-        # Se non c'Ã¨, prendiamo la prima sequenza disponibile (es. SNMOT-117).
         seq_name = 'COMBINED_SEQ'
         if seq_name not in sequences_res:
             seq_name = list(sequences_res.keys())[0]
-            print(f"Attenzione: 'COMBINED_SEQ' non trovato. Mostro i risultati per: {seq_name}")
+            print(f"Attenzione: COMBINED_SEQ non trovato. Uso: {seq_name}")
         
-        # 4. Finalmente accediamo alla classe 'pedestrian' e alle metriche 'HOTA'
-        # Percorso: Dataset -> Tracker -> Sequence -> Class -> Metric
+        # Estrazione metriche HOTA
         stats = sequences_res[seq_name]['pedestrian']['HOTA']
         
-        deta_score = np.mean(stats['DetA']) * 100
-        hota_score = np.mean(stats['HOTA']) * 100
-
-        print(f"\nMetriche finali ({tracker_name} - {seq_name}):")
-        print(f"DetA: {deta_score:.2f}%")
-        print(f"HOTA: {hota_score:.2f}%")
+        # --- MODIFICA CRUCIALE PER ESTRARRE SOLO 0.5 ---
+        # L'array 'DetA' ha 19 valori corrispondenti alle soglie:
+        # 0.05, 0.10, ..., 0.50, ..., 0.95
+        # L'indice 9 corrisponde esattamente alla soglia 0.50
+        index_05 = 9 
         
-        # Se vuoi vedere anche DetRe (Recall) e DetPr (Precision) dato che ti interessano
-        det_re = np.mean(stats['DetRe']) * 100
-        det_pr = np.mean(stats['DetPr']) * 100
-        print(f"DetRe (Recall): {det_re:.2f}%")
-        print(f"DetPr (Precision): {det_pr:.2f}%")
+        # Estrazione valori specifici all'indice 9
+        deta_05 = stats['DetA'][index_05] * 100
+        det_re_05 = stats['DetRe'][index_05] * 100
+        det_pr_05 = stats['DetPr'][index_05] * 100
+        
+        # NOTA: Calcoliamo anche HOTA e AssA a 0.5, ma attenzione:
+        # PoichÃ© usi "fix_ids_for_detection_only", AssA sarÃ  bassissima (~0),
+        # e quindi anche HOTA sarÃ  bassissima. 
+        # Tuttavia, DetA sarÃ  corretta.
+        hota_05 = stats['HOTA'][index_05] * 100
+        assa_05 = stats['AssA'][index_05] * 100
+
+        print("-" * 40)
+        print(f"RISULTATI SPECIFICI PER SOGLIA IoU = 0.5 ({tracker_name})")
+        print("-" * 40)
+        print(f"DetA @ 0.5 (Detection Accuracy):  {deta_05:.2f}%")
+        print(f"DetRe @ 0.5 (Recall):             {det_re_05:.2f}%")
+        print(f"DetPr @ 0.5 (Precision):          {det_pr_05:.2f}%")
+        print("-" * 40)
+        print("Metriche di Tracking (saranno basse se hai resettato gli ID):")
+        print(f"AssA @ 0.5 (Association Acc):     {assa_05:.2f}%")
+        print(f"HOTA @ 0.5:                       {hota_05:.2f}%")
+        print("-" * 40)
 
 if __name__ == "__main__":
     run_evaluation()
+
+
+================================================
+FILE: src/utils/__init__.py
+================================================
+[Empty file]
+
+
+================================================
+FILE: src/utils/get_best_device.py
+================================================
+import torch
+
+def get_best_device():
+    if torch.cuda.is_available():
+        return 'cuda'
+    
+    if torch.backends.mps.is_available():
+        return 'mps'
+    
+    return 'cpu'
+
 

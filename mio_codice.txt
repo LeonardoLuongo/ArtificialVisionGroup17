@@ -1,7 +1,6 @@
 Directory structure:
 └── ArtificialVisionGroup17/
     ├── config.py
-    ├── mio_codice.txt
     ├── conda/
     │   ├── build_run.bat
     │   ├── build_run.sh
@@ -44,6 +43,10 @@ Directory structure:
         ├── Eval/
         │   ├── run_eval.py
         │   └── run_eval_detection_only.py
+        ├── Tracker/
+        │   ├── visualize_result.py
+        │   └── Yolo12m/
+        │       └── inference.py
         └── utils/
             ├── __init__.py
             └── get_best_device.py
@@ -68,87 +71,7 @@ SPLIT_DIR = YOLO_DATASET_PATH / "splits"
 
 OUTPUT_DIR = ROOT_DIR/ "out"
 DETECTOR_OUTPUT_DIR = OUTPUT_DIR / "detector_results"
-TRACKER_OUTPUT_DIR = DETECTOR_OUTPUT_DIR / "tracker_results"
-
-SEQMAP_DIR = OUTPUT_DIR / "seqmap"
-SEQMAP_FILE = SEQMAP_DIR / "soccer_test.txt"
-
-
-
-
-================================================
-FILE: mio_codice.txt
-================================================
-Directory structure:
-â””â”€â”€ ArtificialVisionGroup17/
-    â”œâ”€â”€ config.py
-    â”œâ”€â”€ conda/
-    â”‚   â”œâ”€â”€ build_run.bat
-    â”‚   â”œâ”€â”€ build_run.sh
-    â”‚   â”œâ”€â”€ delete/
-    â”‚   â”‚   â”œâ”€â”€ delete.bat
-    â”‚   â”‚   â””â”€â”€ delete.sh
-    â”‚   â””â”€â”€ run/
-    â”‚       â”œâ”€â”€ run.bat
-    â”‚       â””â”€â”€ run.sh
-    â”œâ”€â”€ dataset/
-    â”‚   â””â”€â”€ tracking-2023/
-    â”‚       â””â”€â”€ dataset_yolo/
-    â”‚           â”œâ”€â”€ dataset.yaml
-    â”‚           â””â”€â”€ splits/
-    â”‚               â”œâ”€â”€ train.txt
-    â”‚               â””â”€â”€ val.txt
-    â”œâ”€â”€ execute_on_colab/
-    â”‚   â”œâ”€â”€ requiremets.txt
-    â”‚   â””â”€â”€ run.ipynb
-    â”œâ”€â”€ models/
-    â”‚   â””â”€â”€ training_runs/
-    â”‚       â””â”€â”€ soccernet_high_precision/
-    â”‚           â”œâ”€â”€ args.yaml
-    â”‚           â””â”€â”€ results.csv
-    â””â”€â”€ src/
-        â”œâ”€â”€ Dataset/
-        â”‚   â”œâ”€â”€ clean_gt.py
-        â”‚   â”œâ”€â”€ convert_to_yolo.py
-        â”‚   â”œâ”€â”€ create_smart_splits.py
-        â”‚   â”œâ”€â”€ create_splits.py
-        â”‚   â””â”€â”€ download_dataset.py
-        â”œâ”€â”€ Detector/
-        â”‚   â”œâ”€â”€ grounding_DINO/
-        â”‚   â”‚   â””â”€â”€ inference.py
-        â”‚   â””â”€â”€ YOLO/
-        â”‚       â”œâ”€â”€ freezing_train.py
-        â”‚       â”œâ”€â”€ inference.py
-        â”‚       â”œâ”€â”€ resume.py
-        â”‚       â””â”€â”€ train.py
-        â”œâ”€â”€ Eval/
-        â”‚   â”œâ”€â”€ run_eval.py
-        â”‚   â””â”€â”€ run_eval_detection_only.py
-        â””â”€â”€ utils/
-            â”œâ”€â”€ __init__.py
-            â””â”€â”€ get_best_device.py
-
-================================================
-FILE: config.py
-================================================
-from pathlib import Path
-# Questo trova automaticamente la cartella dove si trova QUESTO file (la root)
-ROOT_DIR = Path(__file__).parent.resolve()
-
-MODEL_PATH = ROOT_DIR / "models"
-
-DATASET_BASIC_PATH = ROOT_DIR / "dataset"
-DATASET_TR23 = DATASET_BASIC_PATH / "tracking-2023"
-DATASET_TR23_TEST = DATASET_TR23 / "test"
-DATASET_TR23_TRAIN = DATASET_TR23 / "train"
-
-
-YOLO_DATASET_PATH = DATASET_TR23 / "dataset_yolo"
-SPLIT_DIR = YOLO_DATASET_PATH / "splits"
-
-OUTPUT_DIR = ROOT_DIR/ "out"
-DETECTOR_OUTPUT_DIR = OUTPUT_DIR / "detector_results"
-TRACKER_OUTPUT_DIR = DETECTOR_OUTPUT_DIR / "tracker_results"
+TRACKER_OUTPUT_DIR = OUTPUT_DIR / "tracker_results"
 
 SEQMAP_DIR = OUTPUT_DIR / "seqmap"
 SEQMAP_FILE = SEQMAP_DIR / "soccer_test.txt"
@@ -166,7 +89,7 @@ echo [INFO] Avvio procedura combinata Build & Run...
 :: Chiama lo script di build
 call .\conda\build\build.bat
 
-:: Controlla se c'ÃƒÂ¨ stato un errore nella build
+:: Controlla se c'Ã¨ stato un errore nella build
 if %errorlevel% neq 0 (
     echo [ERROR] La creazione dell'environment ha fallito. Impossibile eseguire il run.
     pause
@@ -256,68 +179,68 @@ names:
 ================================================
 FILE: dataset/tracking-2023/dataset_yolo/splits/train.txt
 ================================================
-SNMOT-060
-SNMOT-061
-SNMOT-062
-SNMOT-063
-SNMOT-065
-SNMOT-066
-SNMOT-067
-SNMOT-068
-SNMOT-069
-SNMOT-070
-SNMOT-071
-SNMOT-074
-SNMOT-075
-SNMOT-076
-SNMOT-077
-SNMOT-097
-SNMOT-098
-SNMOT-099
-SNMOT-101
-SNMOT-102
-SNMOT-103
-SNMOT-104
-SNMOT-105
-SNMOT-106
-SNMOT-109
-SNMOT-110
-SNMOT-111
-SNMOT-112
-SNMOT-113
-SNMOT-114
 SNMOT-115
-SNMOT-151
-SNMOT-152
-SNMOT-153
-SNMOT-154
-SNMOT-156
-SNMOT-157
-SNMOT-158
-SNMOT-159
-SNMOT-161
-SNMOT-162
-SNMOT-163
-SNMOT-164
+SNMOT-102
+SNMOT-165
+SNMOT-071
+SNMOT-076
+SNMOT-099
 SNMOT-166
-SNMOT-168
 SNMOT-169
+SNMOT-112
+SNMOT-098
+SNMOT-069
+SNMOT-159
+SNMOT-110
+SNMOT-114
+SNMOT-109
+SNMOT-155
+SNMOT-063
+SNMOT-100
+SNMOT-162
+SNMOT-064
+SNMOT-108
+SNMOT-070
+SNMOT-152
+SNMOT-101
+SNMOT-153
+SNMOT-103
+SNMOT-060
+SNMOT-156
+SNMOT-104
+SNMOT-163
+SNMOT-097
+SNMOT-107
+SNMOT-160
+SNMOT-105
+SNMOT-072
 SNMOT-170
+SNMOT-111
+SNMOT-164
+SNMOT-073
+SNMOT-158
+SNMOT-168
+SNMOT-062
+SNMOT-106
+SNMOT-151
+SNMOT-065
 
 
 ================================================
 FILE: dataset/tracking-2023/dataset_yolo/splits/val.txt
 ================================================
-SNMOT-064
-SNMOT-072
-SNMOT-073
-SNMOT-100
-SNMOT-107
-SNMOT-108
-SNMOT-155
-SNMOT-160
-SNMOT-165
+SNMOT-113
+SNMOT-157
+SNMOT-066
 SNMOT-167
+SNMOT-068
+SNMOT-074
+SNMOT-075
+SNMOT-077
+SNMOT-161
+SNMOT-061
+SNMOT-067
+SNMOT-154
 
 
 ================================================
@@ -431,1577 +354,6 @@ weight_decay: 0.0005
 warmup_epochs: 3.0
 warmup_momentum: 0.8
 warmup_bias_lr: 0.1
-box: 12.0
-cls: 0.4
-dfl: 2.0
-pose: 12.0
-kobj: 1.0
-nbs: 64
-hsv_h: 0.015
-hsv_s: 0.7
-hsv_v: 0.4
-degrees: 0.0
-translate: 0.1
-scale: 0.5
-shear: 0.0
-perspective: 0.0
-flipud: 0.0
-fliplr: 0.5
-bgr: 0.0
-mosaic: 1.0
-mixup: 0.0
-cutmix: 0.0
-copy_paste: 0.0
-copy_paste_mode: flip
-auto_augment: randaugment
-erasing: 0.4
-cfg: null
-tracker: botsort.yaml
-save_dir: C:\Users\leona\Documents\AV_Project\ArtificialVisionGroup17\models\training_runs\soccernet_high_precision
-
-
-
-================================================
-FILE: models/training_runs/soccernet_high_precision/results.csv
-================================================
-epoch,time,train/box_loss,train/cls_loss,train/dfl_loss,metrics/precision(B),metrics/recall(B),metrics/mAP50(B),metrics/mAP50-95(B),val/box_loss,val/cls_loss,val/dfl_loss,lr/pg0,lr/pg1,lr/pg2
-1,269.649,2.1815,0.66274,1.42101,0.94896,0.93674,0.96843,0.59581,2.03923,0.4773,1.42489,0.0670207,0.000165725,0.000165725
-2,544.329,2.10532,0.56824,1.39084,0.93998,0.90424,0.9654,0.60594,1.99316,0.52691,1.39671,0.0338475,0.00032581,0.00032581
-3,815.931,2.05302,0.54318,1.37094,0.94668,0.88659,0.96421,0.61227,1.96805,0.52663,1.38292,0.00066762,0.000479296,0.000479296
-4,1084.91,2.04997,0.54418,1.37471,0.94554,0.8894,0.96547,0.60846,1.96878,0.53562,1.38402,0.0004703,0.0004703,0.0004703
-5,1350.23,2.03565,0.538,1.35596,0.95189,0.90973,0.97194,0.62322,1.96766,0.48069,1.38626,0.0004604,0.0004604,0.0004604
-6,1615.39,2.00119,0.52797,1.34824,0.95817,0.90015,0.9706,0.62081,1.97774,0.47574,1.38781,0.0004505,0.0004505,0.0004505
-7,1880.6,1.97084,0.52325,1.34319,0.95232,0.88465,0.96522,0.6104,1.99961,0.50793,1.40122,0.0004406,0.0004406,0.0004406
-8,2145.52,1.97387,0.52829,1.34597,0.95131,0.91692,0.97302,0.62697,1.92871,0.48478,1.37797,0.0004307,0.0004307,0.0004307
-9,2410.43,1.9841,0.53548,1.35085,0.94729,0.91316,0.97159,0.62306,1.94334,0.49573,1.38159,0.0004208,0.0004208,0.0004208
-10,2676.12,1.94751,0.51781,1.34093,0.94821,0.88517,0.96673,0.61658,1.95455,0.5034,1.38209,0.0004109,0.0004109,0.0004109
-11,2941.06,1.94951,0.52343,1.33216,0.95703,0.90156,0.97263,0.63405,1.92642,0.48102,1.37433,0.000401,0.000401,0.000401
-12,3206.28,1.92088,0.50921,1.33674,0.95167,0.89992,0.97076,0.62319,1.95967,0.4864,1.38464,0.0003911,0.0003911,0.0003911
-13,3471.52,1.91611,0.50148,1.31695,0.95759,0.91736,0.97521,0.62457,1.97524,0.4652,1.38596,0.0003812,0.0003812,0.0003812
-14,3736.62,1.89877,0.50817,1.32762,0.94017,0.89361,0.96693,0.62099,1.93362,0.49097,1.37774,0.0003713,0.0003713,0.0003713
-15,4001.5,1.91641,0.49896,1.32715,0.94885,0.91589,0.97447,0.63323,1.93165,0.46175,1.37871,0.0003614,0.0003614,0.0003614
-16,4266.47,1.91705,0.5041,1.3194,0.9412,0.90759,0.97182,0.62122,1.96477,0.48206,1.38558,0.0003515,0.0003515,0.0003515
-17,4531.25,1.90984,0.50395,1.31547,0.95742,0.92042,0.97531,0.62959,1.97878,0.4501,1.39573,0.0003416,0.0003416,0.0003416
-18,4796.02,1.87359,0.4869,1.31695,0.95119,0.90375,0.96985,0.62882,1.93408,0.47099,1.37515,0.0003317,0.0003317,0.0003317
-19,5061.31,1.87533,0.49538,1.31472,0.95047,0.91261,0.97273,0.62915,1.9388,0.45904,1.38079,0.0003218,0.0003218,0.0003218
-20,5326.1,1.87122,0.4923,1.31621,0.9528,0.92196,0.97528,0.63639,1.92167,0.4511,1.37182,0.0003119,0.0003119,0.0003119
-21,5590.71,1.85028,0.47856,1.31536,0.95162,0.91136,0.97347,0.6321,1.93829,0.47463,1.37144,0.000302,0.000302,0.000302
-22,5855.34,1.84715,0.47968,1.30124,0.95454,0.91696,0.97385,0.62503,1.96045,0.46115,1.38161,0.0002921,0.0002921,0.0002921
-23,6120.09,1.84093,0.4739,1.30195,0.9524,0.91113,0.97343,0.63298,1.94424,0.45289,1.37934,0.0002822,0.0002822,0.0002822
-24,6384.86,1.83172,0.478,1.30061,0.9544,0.91923,0.97463,0.63373,1.93416,0.45709,1.37455,0.0002723,0.0002723,0.0002723
-25,6649.41,1.81952,0.4706,1.29838,0.94093,0.9038,0.96927,0.62468,1.94021,0.48392,1.37518,0.0002624,0.0002624,0.0002624
-26,6913.79,1.82498,0.47033,1.29679,0.94551,0.90785,0.97148,0.62381,1.96442,0.47369,1.38319,0.0002525,0.0002525,0.0002525
-27,7263.7,1.80772,0.47189,1.29684,0.94323,0.91158,0.97102,0.62466,1.9469,0.4806,1.3799,0.0002426,0.0002426,0.0002426
-28,7528.32,1.80713,0.46982,1.30358,0.95134,0.91048,0.97312,0.62762,1.95323,0.46219,1.38695,0.0002327,0.0002327,0.0002327
-29,7793.18,1.8026,0.4673,1.28967,0.95193,0.92028,0.97577,0.63427,1.93912,0.45174,1.38035,0.0002228,0.0002228,0.0002228
-30,8058.04,1.78068,0.46026,1.29166,0.9453,0.90987,0.97231,0.63767,1.91804,0.45413,1.37708,0.0002129,0.0002129,0.0002129
-31,8322.96,1.76124,0.45746,1.2839,0.95599,0.92684,0.97636,0.6312,1.94344,0.44221,1.37994,0.000203,0.000203,0.000203
-32,8587.79,1.76355,0.45672,1.28315,0.94434,0.91849,0.97289,0.62732,1.96708,0.46016,1.38788,0.0001931,0.0001931,0.0001931
-33,8852.79,1.74533,0.45057,1.27811,0.94836,0.91664,0.97364,0.63078,1.93468,0.46412,1.37412,0.0001832,0.0001832,0.0001832
-34,9117.57,1.7514,0.45103,1.27637,0.94883,0.91617,0.97302,0.63401,1.92425,0.46354,1.37571,0.0001733,0.0001733,0.0001733
-35,9382.42,1.74327,0.45561,1.27991,0.946,0.90922,0.97189,0.63461,1.92558,0.47272,1.37281,0.0001634,0.0001634,0.0001634
-36,9646.72,1.73351,0.44681,1.27128,0.95216,0.92079,0.97509,0.63416,1.96277,0.44633,1.38891,0.0001535,0.0001535,0.0001535
-37,9911.29,1.7201,0.43658,1.26826,0.95035,0.91722,0.97442,0.63269,1.94486,0.45271,1.37967,0.0001436,0.0001436,0.0001436
-38,10175.9,1.71083,0.44476,1.27119,0.94922,0.92531,0.97465,0.63388,1.93862,0.44448,1.38272,0.0001337,0.0001337,0.0001337
-39,10440.8,1.71952,0.43985,1.27028,0.94731,0.92164,0.97471,0.63563,1.93317,0.44748,1.37566,0.0001238,0.0001238,0.0001238
-40,10705.3,1.72247,0.43647,1.26784,0.95367,0.92146,0.97571,0.63146,1.95731,0.43885,1.38999,0.0001139,0.0001139,0.0001139
-41,10987.2,1.66181,0.42367,1.28189,0.94682,0.92041,0.97495,0.63894,1.93715,0.44749,1.37819,0.000104,0.000104,0.000104
-42,11250.5,1.63294,0.42238,1.28642,0.94969,0.92364,0.9753,0.63734,1.94203,0.44695,1.38132,9.41e-05,9.41e-05,9.41e-05
-43,11513.6,1.63865,0.41899,1.28664,0.95211,0.92198,0.97543,0.63696,1.94063,0.44283,1.38657,8.42e-05,8.42e-05,8.42e-05
-44,11777,1.62564,0.41581,1.28153,0.94734,0.91808,0.97315,0.62813,1.9697,0.45652,1.39452,7.43e-05,7.43e-05,7.43e-05
-45,12040.2,1.61696,0.41001,1.28388,0.95261,0.92374,0.97538,0.63424,1.95227,0.44479,1.38468,6.44e-05,6.44e-05,6.44e-05
-46,12303.1,1.60042,0.4097,1.27195,0.95224,0.92374,0.97604,0.6347,1.96516,0.4431,1.392,5.45e-05,5.45e-05,5.45e-05
-47,12566.3,1.58751,0.41147,1.26215,0.94966,0.91952,0.97454,0.63157,1.96531,0.4484,1.39098,4.46e-05,4.46e-05,4.46e-05
-48,12829.2,1.59231,0.4076,1.27247,0.95078,0.92388,0.97587,0.63763,1.94538,0.4393,1.38781,3.47e-05,3.47e-05,3.47e-05
-49,13092.4,1.57098,0.40512,1.26786,0.95158,0.9264,0.97612,0.63826,1.95153,0.4371,1.39024,2.48e-05,2.48e-05,2.48e-05
-50,13355.6,1.56975,0.4036,1.26941,0.9501,0.9238,0.97549,0.63667,1.9551,0.44397,1.38899,1.49e-05,1.49e-05,1.49e-05
-
-
-
-================================================
-FILE: src/Dataset/clean_gt.py
-================================================
-import os
-import configparser
-import shutil
-from config import *
-
-def clean_gt_for_soccer():
-    # Percorso ai tuoi dati di test (o train se stai facendo prove)
-    base_paths = [DATASET_TR23_TEST, DATASET_TR23_TRAIN]
-    
-    # Classi che consideriamo "TARGET" da tracciare
-    # In base al PDF, il task ÃƒÂ¨ "Player tracking". 
-    # Solitamente include portieri. Gli arbitri a volte sono esclusi o inclusi.
-    # Se il gameinfo distingue "referee", decidi tu se tenerlo. 
-    # Qui sotto tengo players, goalkeepers e referee.
-    valid_keywords = ['player', 'goalkeeper', 'referee'] 
-
-    
-    for base_path in base_paths:
-        if not os.path.exists(base_path):
-            print(f"Errore: {base_path} non trovato.")
-            return
-        
-        for seq_name in os.listdir(base_path):
-            seq_path = os.path.join(base_path, seq_name)
-            gameinfo_path = os.path.join(seq_path, 'gameinfo.ini')
-            gt_folder = os.path.join(seq_path, 'gt')
-            gt_path = os.path.join(gt_folder, 'gt.txt')
-            
-            # Facciamo un backup del gt originale se non esiste
-            gt_backup = os.path.join(gt_folder, 'gt_backup.txt')
-
-            if os.path.exists(gameinfo_path) and os.path.exists(gt_path):
-                if not os.path.exists(gt_backup):
-                    shutil.copy(gt_path, gt_backup)
-                
-                # Leggiamo gli ID da rimuovere (es. la palla)
-                config = configparser.ConfigParser()
-                config.read(gameinfo_path)
-                
-                ids_to_keep = []
-                if 'Sequence' in config:
-                    for key, value in config['Sequence'].items():
-                        if key.startswith('trackletid_'):
-                            # Se la descrizione contiene player/goalkeeper/referee, teniamo l'ID
-                            if any(k in value.lower() for k in valid_keywords):
-                                try:
-                                    # trackletID_20 -> prendiamo 20
-                                    obj_id = int(key.split('_')[1])
-                                    ids_to_keep.append(obj_id)
-                                except:
-                                    pass
-
-                # Riscriviamo il GT pulito
-                with open(gt_backup, 'r') as f_in, open(gt_path, 'w') as f_out:
-                    for line in f_in:
-                        parts = line.strip().split(',')
-                        # Formato GT: frame, ID, x, y, w, h, conf, class, vis
-                        if len(parts) < 6: continue
-                        
-                        obj_id = int(parts[1])
-                        
-                        if obj_id in ids_to_keep:
-                            # TRUCCO TECNICO:
-                            # Assicuriamoci che ci siano 10 colonne (standard MOT)
-                            # E impostiamo la colonna 8 (classe) a 1 ("pedestrian" per TrackEval)
-                            # Anche se sono calciatori, TrackEval vuole vedere "1" lÃƒÂ¬.
-                            
-                            # Recuperiamo i dati essenziali
-                            frame = parts[0]
-                            pid = parts[1]
-                            x, y, w, h = parts[2:6]
-                            
-                            # Creiamo la riga perfetta per TrackEval:
-                            # conf=1, class=1, visibility=1
-                            new_line = f"{frame},{pid},{x},{y},{w},{h},1,1,1\n"
-                            f_out.write(new_line)
-                
-                print(f"Pulito GT per sequenza: {seq_name}")
-
-if __name__ == "__main__":
-    clean_gt_for_soccer()
-
-
-================================================
-FILE: src/Dataset/convert_to_yolo.py
-================================================
-# =================================================
-# FILE: src/Dataset/convert_to_yolo.py
-# =================================================
-import os
-import shutil
-import sys
-import cv2
-from pathlib import Path
-from tqdm import tqdm
-
-# Aggiungiamo la root al path per importare config
-ROOT_DIR = Path(__file__).parent.parent.parent.resolve()
-sys.path.append(str(ROOT_DIR))
-
-
-# Definiamo il tasso di campionamento (1 frame ogni 25)
-TRAIN_SUBSAMPLE_RATE = 25
-
-# Importiamo le costanti definite in config
-from config import DATASET_TR23_TRAIN, YOLO_DATASET_PATH, SPLIT_DIR
-
-def convert_dataset_from_manifest():
-    print("--- Inizio Conversione Dataset (Manifest Mode) ---")
-    
-    # 1. Verifica esistenza file manifest
-    train_manifest = SPLIT_DIR / "train.txt"
-    val_manifest = SPLIT_DIR / "val.txt"
-    
-    if not train_manifest.exists() or not val_manifest.exists():
-        print(f"[ERRORE] File manifest non trovati in {SPLIT_DIR}")
-        print("Esegui prima 'src/Dataset/create_splits.py' per generare le liste!")
-        return
-
-    # 2. Leggi le liste delle sequenze
-    with open(train_manifest, 'r') as f:
-        train_seqs = [line.strip() for line in f if line.strip()]
-        
-    with open(val_manifest, 'r') as f:
-        val_seqs = [line.strip() for line in f if line.strip()]
-        
-    print(f"Sequenze caricate -> Train: {len(train_seqs)}, Val: {len(val_seqs)}")
-
-    # 3. Pulisci e Prepara le cartelle di destinazione (train/val)
-    # Nota: Non cancelliamo SPLIT_DIR perchÃƒÂ© ÃƒÂ¨ dentro YOLO_DATASET_PATH
-    images_dir = YOLO_DATASET_PATH / "images"
-    labels_dir = YOLO_DATASET_PATH / "labels"
-    
-    if images_dir.exists(): shutil.rmtree(images_dir)
-    if labels_dir.exists(): shutil.rmtree(labels_dir)
-    
-    for split in ['train', 'val']:
-        (images_dir / split).mkdir(parents=True, exist_ok=True)
-        (labels_dir / split).mkdir(parents=True, exist_ok=True)
-
-    # ------------------------------------------------------------------
-    # Funzione interna per processare una lista di sequenze
-    # ------------------------------------------------------------------
-    def process_split(seq_list, split_name):
-        dest_img_dir = images_dir / split_name
-        dest_lbl_dir = labels_dir / split_name
-        
-        print(f"Elaborazione split: {split_name}...")
-        
-        for seq_name in tqdm(seq_list):
-            seq_path = DATASET_TR23_TRAIN / seq_name
-            gt_path = seq_path / "gt" / "gt.txt"
-            img_source_dir = seq_path / "img1"
-            
-            # Controllo integritÃƒÂ 
-            if not seq_path.exists():
-                print(f"[WARN] La sequenza '{seq_name}' ÃƒÂ¨ nel manifest ma non sul disco. Saltata.")
-                continue
-            if not gt_path.exists():
-                # Alcune sequenze potrebbero non avere GT (raro nel train set), saltiamo
-                continue
-
-            # A. Otteniamo dimensioni immagine (necessario per normalizzare YOLO)
-            # Leggiamo la prima immagine disponibile
-            first_img = next(img_source_dir.glob("*.jpg"), None)
-            if first_img is None:
-                continue
-                
-            img_cv = cv2.imread(str(first_img))
-            if img_cv is None: continue
-            img_h, img_w, _ = img_cv.shape
-
-            # B. Leggiamo e Parsiamo il GT (Ground Truth)
-            # Formato MOT: frame, id, x_top, y_top, w, h, ...
-            frames_data = {}
-            with open(gt_path, 'r') as f:
-                for line in f:
-                    parts = line.strip().split(',')
-                    if len(parts) < 6: continue
-                    
-                    frame_id = int(parts[0])
-                    x_top, y_top, w_box, h_box = float(parts[2]), float(parts[3]), float(parts[4]), float(parts[5])
-                    
-                    # C. Convertiamo in formato YOLO (Normalizzato 0-1 e Centro)
-                    # Class ID 0 = player
-                    x_center = (x_top + w_box / 2) / img_w
-                    y_center = (y_top + h_box / 2) / img_h
-                    w_norm = w_box / img_w
-                    h_norm = h_box / img_h
-                    
-                    # Clipping per sicurezza (valori devono stare tra 0 e 1)
-                    x_center = max(0, min(1, x_center))
-                    y_center = max(0, min(1, y_center))
-                    w_norm = max(0, min(1, w_norm))
-                    h_norm = max(0, min(1, h_norm))
-                    
-                    if frame_id not in frames_data:
-                        frames_data[frame_id] = []
-                    
-                    # Stringa YOLO: class x_c y_c w h
-                    frames_data[frame_id].append(f"0 {x_center:.6f} {y_center:.6f} {w_norm:.6f} {h_norm:.6f}")
-
-            # D. Copiamo le immagini e creiamo i file label
-            for img_file in img_source_dir.glob("*.jpg"):
-                frame_idx = int(img_file.stem) # es. '000001' -> 1
-
-                if split_name == 'train':
-                    # Esempio: tiene frame 1, 11, 21... (se il resto della div ÃƒÂ¨ 1)
-                    # Oppure frame 10, 20, 30... (se resto ÃƒÂ¨ 0). 
-                    # Usiamo (frame_idx - 1) % RATE == 0 per prendere il primo frame sicuro.
-                    if (frame_idx - 1) % TRAIN_SUBSAMPLE_RATE != 0:
-                        continue 
-                
-                # Nome univoco: SequenceName_ImageName.jpg
-                new_filename = f"{seq_name}_{img_file.name}"
-                
-                # Copia immagine
-                shutil.copy(img_file, dest_img_dir / new_filename)
-                
-                # Crea file label (.txt)
-                label_filename = f"{seq_name}_{img_file.stem}.txt"
-                label_path = dest_lbl_dir / label_filename
-                
-                content = frames_data.get(frame_idx, [])
-                
-                with open(label_path, 'w') as lf:
-                    if content:
-                        lf.write("\n".join(content))
-                    else:
-                        # File vuoto = nessuna detection in questo frame (Background image)
-                        # YOLO lo usa per capire dove NON c'ÃƒÂ¨ nulla
-                        pass 
-
-    # 4. Eseguiamo la conversione per entrambi gli split
-    process_split(train_seqs, 'train')
-    process_split(val_seqs, 'val')
-
-    # 5. Creazione dataset.yaml per Ultralytics
-    # Usiamo path assoluti o relativi al file yaml
-    yaml_content = f"""
-path: {YOLO_DATASET_PATH.as_posix()}
-train: images/train
-val: images/val
-names:
-  0: player
-"""
-    yaml_path = YOLO_DATASET_PATH / "dataset.yaml"
-    with open(yaml_path, 'w') as f:
-        f.write(yaml_content)
-
-    print("------------------------------------------------")
-    print("Conversione Completata!")
-    print(f"Dataset YOLO pronto in: {YOLO_DATASET_PATH}")
-    print(f"File configurazione: {yaml_path}")
-    print("------------------------------------------------")
-
-if __name__ == "__main__":
-    convert_dataset_from_manifest()
-
-
-================================================
-FILE: src/Dataset/create_smart_splits.py
-================================================
-# =================================================
-# FILE: src/Dataset/create_smart_splits.py
-# =================================================
-import os
-import random
-import sys
-import numpy as np
-import torch
-import torch.nn as nn
-from torchvision import models, transforms
-from PIL import Image
-from pathlib import Path
-from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score
-from sklearn.decomposition import PCA
-import matplotlib.pyplot as plt
-from collections import defaultdict
-from tqdm import tqdm
-
-# Setup path
-ROOT_DIR = Path(__file__).parent.parent.parent.resolve()
-sys.path.append(str(ROOT_DIR))
-from config import DATASET_TR23_TRAIN, SPLIT_DIR, OUTPUT_DIR
-from src.utils.get_best_device import get_best_device
-
-# Parametri
-VAL_RATIO = 0.2
-SEED = 42
-FRAMES_PER_SEQ = 3  
-MIN_CLUSTERS = 2
-MAX_CLUSTERS = 10   
-
-def extract_features(dataset_path):
-    device = get_best_device()
-    print(f"Caricamento modello ResNet18 su {device}...")
-    
-    model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
-    model = nn.Sequential(*list(model.children())[:-1]) 
-    model.to(device)
-    model.eval()
-    
-    preprocess = transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ])
-
-    features_dict = {} # Mappa seq_name -> feature_vector
-    
-    seq_dirs = sorted([s for s in os.listdir(dataset_path) if (dataset_path / s).is_dir()])
-    
-    print(f"Estrazione feature da {len(seq_dirs)} sequenze...")
-    
-    with torch.no_grad():
-        for seq in tqdm(seq_dirs):
-            img_dir = dataset_path / seq / "img1"
-            all_images = sorted(list(img_dir.glob("*.jpg")))
-            
-            if not all_images: continue
-            
-            indices = np.linspace(0, len(all_images) - 1, FRAMES_PER_SEQ, dtype=int)
-            selected_imgs = [all_images[i] for i in indices]
-            
-            seq_feats = []
-            for img_path in selected_imgs:
-                try:
-                    img = Image.open(img_path).convert('RGB')
-                    img_t = preprocess(img).unsqueeze(0).to(device)
-                    emb = model(img_t).flatten().cpu().numpy()
-                    seq_feats.append(emb)
-                except Exception:
-                    pass
-
-            if seq_feats:
-                avg_feat = np.mean(seq_feats, axis=0)
-                features_dict[seq] = avg_feat
-
-    return features_dict
-
-def find_best_k(features, min_k=2, max_k=10):
-    print("\n--- Ricerca Automatica K (Clustering) ---")
-    best_k = min_k
-    best_score = -1
-    best_labels = None
-    
-    limit_k = min(len(features), max_k)
-    if len(features) < 2: return 1, np.zeros(len(features))
-
-    for k in range(min_k, limit_k + 1):
-        kmeans = KMeans(n_clusters=k, random_state=SEED, n_init=10)
-        labels = kmeans.fit_predict(features)
-        score = silhouette_score(features, labels)
-        if score > best_score:
-            best_score = score
-            best_k = k
-            best_labels = labels
-            
-    print(f"--> Miglior K trovato: {best_k} (Silhouette Score: {best_score:.4f})")
-    return best_k, best_labels
-
-def visualize_split_quality(features_dict, train_seqs, val_seqs):
-    """
-    Genera un grafico 2D per mostrare quanto Train e Val si sovrappongono.
-    """
-    print("\nGenerazione grafico di qualitÃƒÂ  dello split...")
-    
-    all_seqs = train_seqs + val_seqs
-    X = np.array([features_dict[s] for s in all_seqs])
-    
-    # Riduciamo a 2 dimensioni con PCA per poter disegnare
-    pca = PCA(n_components=2)
-    X_pca = pca.fit_transform(X)
-    
-    # Creiamo due liste di coordinate
-    train_indices = [i for i, s in enumerate(all_seqs) if s in train_seqs]
-    val_indices = [i for i, s in enumerate(all_seqs) if s in val_seqs]
-    
-    plt.figure(figsize=(10, 8))
-    
-    # Disegna Train (Blu)
-    plt.scatter(X_pca[train_indices, 0], X_pca[train_indices, 1], 
-                c='blue', alpha=0.5, label='Train Set', s=50)
-    
-    # Disegna Val (Rosso)
-    plt.scatter(X_pca[val_indices, 0], X_pca[val_indices, 1], 
-                c='red', marker='x', alpha=0.9, label='Val Set', s=70)
-    
-    plt.title(f"Distribuzione Train vs Val (PCA)\nObiettivo: I punti rossi devono essere ben distribuiti tra i blu")
-    plt.xlabel("Principal Component 1")
-    plt.ylabel("Principal Component 2")
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    
-    output_plot = OUTPUT_DIR / "split_quality_check.png"
-    if not OUTPUT_DIR.exists(): OUTPUT_DIR.mkdir(parents=True)
-    
-    plt.savefig(output_plot)
-    print(f"--> Grafico salvato in: {output_plot}")
-    print("    APRILO! Se i punti rossi coprono bene l'area dei blu, lo split ÃƒÂ¨ ottimo.")
-
-def create_smart_splits():
-    if not DATASET_TR23_TRAIN.exists():
-        print(f"Dataset non trovato in {DATASET_TR23_TRAIN}")
-        return
-
-    # 1. Estrazione Features
-    features_map = extract_features(DATASET_TR23_TRAIN)
-    sequences = sorted(list(features_map.keys()))
-    features_matrix = np.array([features_map[s] for s in sequences])
-    
-    if len(sequences) == 0: return
-
-    # 2. Clustering
-    n_clusters, clusters = find_best_k(features_matrix, MIN_CLUSTERS, MAX_CLUSTERS)
-    
-    clustered_seqs = defaultdict(list)
-    for seq, cluster_id in zip(sequences, clusters):
-        clustered_seqs[cluster_id].append(seq)
-        
-    # 3. Stratified Split
-    train_final = []
-    val_final = []
-    
-    print("\n--- Generazione Split ---")
-    for cid in sorted(clustered_seqs.keys()):
-        seqs_in_cluster = clustered_seqs[cid]
-        random.seed(SEED)
-        random.shuffle(seqs_in_cluster)
-        
-        n_val = int(len(seqs_in_cluster) * VAL_RATIO)
-        if n_val == 0 and len(seqs_in_cluster) > 1: n_val = 1
-            
-        val_subset = seqs_in_cluster[:n_val]
-        train_subset = seqs_in_cluster[n_val:]
-        
-        val_final.extend(val_subset)
-        train_final.extend(train_subset)
-        print(f"Cluster {cid}: {len(train_subset)} Train, {len(val_subset)} Val")
-
-    # 4. Salva i file
-    SPLIT_DIR.mkdir(parents=True, exist_ok=True)
-    with open(SPLIT_DIR / "train.txt", "w") as f: f.write("\n".join(sorted(train_final)))
-    with open(SPLIT_DIR / "val.txt", "w") as f: f.write("\n".join(sorted(val_final)))
-    
-    # 5. VERIFICA VISIVA (Nuovo!)
-    visualize_split_quality(features_map, train_final, val_final)
-
-if __name__ == "__main__":
-    create_smart_splits()
-
-
-================================================
-FILE: src/Dataset/create_splits.py
-================================================
-# =================================================
-# FILE: src/Dataset/create_splits.py
-# =================================================
-import os
-import random
-from config import DATASET_TR23_TRAIN, SPLIT_DIR
-
-# --- PARAMETRI NUOVI (Da mettere in config.py se vuoi, o lasciare qui) ---
-VAL_RATIO = 0.2  # Percentuale di dati da usare per la validazione (20%)
-SEED = 42        # Numero magico per la riproducibilitÃƒÂ 
-# -------------------------------------------------------------------------
-
-def generate_manifests():
-    print(f"Generazione manifest partendo da: {DATASET_TR23_TRAIN}")
-    
-    if not DATASET_TR23_TRAIN.exists():
-        print(f"ERRORE: La cartella dataset {DATASET_TR23_TRAIN} non esiste.")
-        return
-
-    # 1. Leggi tutte le cartelle (sequenze)
-    sequences = [s for s in os.listdir(DATASET_TR23_TRAIN) if (DATASET_TR23_TRAIN / s).is_dir()]
-    
-    # 2. Ordina la lista (FONDAMENTALE per avere coerenza tra sistemi diversi)
-    sequences = sorted(sequences)
-    
-    # 3. Mescola in modo deterministico
-    random.seed(SEED)
-    random.shuffle(sequences)
-    
-    # 4. Calcola il punto di taglio
-    split_idx = int(len(sequences) * (1 - VAL_RATIO))
-    train_seqs = sequences[:split_idx]
-    val_seqs = sequences[split_idx:]
-    
-    # 5. Prepara cartella output
-    SPLIT_DIR.mkdir(parents=True, exist_ok=True)
-    
-    # 6. Scrivi i file
-    train_file = SPLIT_DIR / "train.txt"
-    val_file = SPLIT_DIR / "val.txt"
-    
-    with open(train_file, "w") as f:
-        f.write("\n".join(train_seqs))
-        
-    with open(val_file, "w") as f:
-        f.write("\n".join(val_seqs))
-        
-    print("------------------------------------------------")
-    print(f"Manifest creati con successo in: {SPLIT_DIR}")
-    print(f"Train sequences ({len(train_seqs)}): salvate in train.txt")
-    print(f"Val sequences   ({len(val_seqs)}): salvate in val.txt")
-    print("------------------------------------------------")
-
-if __name__ == "__main__":
-    generate_manifests()
-
-
-================================================
-FILE: src/Dataset/download_dataset.py
-================================================
-from SoccerNet.Downloader import SoccerNetDownloader
-
-def donwnload_tracking_2023():
-    mySoccerNetDownloader = SoccerNetDownloader(LocalDirectory="./dataset")
-    mySoccerNetDownloader.downloadDataTask(task="tracking-2023", split=["train", "test", "challenge"])
-
-if __name__ == "__main__":
-    donwnload_tracking_2023()
-
-
-================================================
-FILE: src/Detector/grounding_DINO/inference.py
-================================================
-import os
-import sys
-import shutil
-import torch
-import warnings
-from PIL import Image
-from transformers import AutoProcessor, AutoModelForZeroShotObjectDetection
-from pathlib import Path
-
-# --- SETUP PATH ---
-current_file = Path(__file__).resolve()
-project_root = current_file.parent.parent.parent.parent
-sys.path.append(str(project_root))
-
-warnings.filterwarnings("ignore", category=UserWarning, module="torchvision")
-
-try:
-    from config import *
-except ImportError:
-    print("ERRORE CRITICO: Non riesco a trovare 'config.py'.")
-    sys.exit(1)
-
-def run_grounding_dino_detection():
-    # Setup del modello
-    model_id = "IDEA-Research/grounding-dino-base"
-    
-    if torch.backends.mps.is_available():
-        device = 'mps'
-        print("Uso accelerazione Apple Silicon (MPS)")
-    elif torch.cuda.is_available():
-        device = 'cuda'
-        print("Uso accelerazione CUDA")
-    else:
-        device = 'cpu'
-        print("Uso CPU (Lento)")
-
-    print(f"Caricamento Grounding DINO ({model_id})...")
-    
-    processor = AutoProcessor.from_pretrained(model_id)
-    model = AutoModelForZeroShotObjectDetection.from_pretrained(model_id).to(device)
-
-    TEXT_PROMPT = "person."  
-    BOX_THRESHOLD = 0.35   
-    TEXT_THRESHOLD = 0.25  
-
-    base_path = os.path.join(DATASET_TR23_TEST, "test")
-    output_folder = Path(DETECTOR_OUTPUT_DIR) / "grounding_dino_base"
-    
-    print(f"\n--- DEBUG PATH ---")
-    print(f"Path Dataset: {base_path}")
-    print(f"Path Output:  {output_folder}")
-    
-    if not os.path.exists(base_path):
-        print(f"ERRORE: La cartella del dataset NON esiste: {base_path}")
-        return
-
-    sequences = os.listdir(base_path)
-    print(f"Ho trovato {len(sequences)} elementi nella cartella del dataset.")
-
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
-
-    files_created = 0
-
-    for seq_name in sequences:
-        seq_path = os.path.join(base_path, seq_name)
-        img_source = os.path.join(seq_path, 'img1')
-
-        if not os.path.isdir(seq_path): continue
-        if not os.path.exists(img_source):
-            print(f"  -> SALTATA {seq_name}: Manca cartella img1")
-            continue
-        
-        # Filtra solo immagini vere
-        image_files = sorted([f for f in os.listdir(img_source) if f.lower().endswith(('.jpg', '.jpeg', '.png'))])
-        num_imgs = len(image_files)
-        
-        if num_imgs == 0:
-            print(f"  -> SALTATA {seq_name}: Cartella vuota")
-            continue
-
-        print(f"\nAnalisi sequenza: {seq_name} ({num_imgs} immagini)")
-        
-        res_file_path = os.path.join(output_folder, f"{seq_name}.txt")
-        
-        with open(res_file_path, 'w') as f:
-            lines_written = 0
-            
-            for i, img_name in enumerate(image_files):
-                if i % 10 == 0: 
-                    print(f"     Elaborazione frame {i}/{num_imgs}...", end='\r')
-
-                img_path = os.path.join(img_source, img_name)
-                
-                try:
-                    frame_id = int(img_name.split('.')[0])
-                except ValueError:
-                    continue 
-
-                try:
-                    image_pil = Image.open(img_path).convert("RGB")
-                    
-                    inputs = processor(images=image_pil, text=TEXT_PROMPT, return_tensors="pt").to(device)
-                    
-                    with torch.no_grad():
-                        outputs = model(**inputs)
-
-                    width, height = image_pil.size
-                    
-                    results = processor.post_process_grounded_object_detection(
-                        outputs,
-                        inputs.input_ids,
-                        target_sizes=[(height, width)]
-                    )[0]
-
-                    for score, label, box in zip(results["scores"], results["labels"], results["boxes"]):
-                        
-                        if score.item() < BOX_THRESHOLD:
-                            continue
-                        
-                        if "person" in label:
-                            x1, y1, x2, y2 = box.cpu().numpy()
-                            w = x2 - x1
-                            h = y2 - y1
-                            conf = score.item()
-
-                            # Scrittura formato MOT
-                            # frame_id, id_obj(-1), x1, y1, w, h, conf, -1, -1, -1
-                            line = f"{frame_id},-1,{x1:.2f},{y1:.2f},{w:.2f},{h:.2f},{conf:.4f},-1,1,-1\n"
-                            f.write(line)
-                            lines_written += 1
-                            
-                except Exception as e:
-                    print(f"\nErrore nel frame {img_name}: {e}")
-                    continue
-
-            print(f"     COMPLETATO! Scritte {lines_written} righe.        ")
-            files_created += 1
-
-    print(f"\n--- FINE ---")
-    print(f"File salvati in: {output_folder}")
-
-if __name__ == "__main__":
-    run_grounding_dino_detection()
-
-
-================================================
-FILE: src/Detector/YOLO/freezing_train.py
-================================================
-# src/Detector/YOLO/train_tuned.py
-from ultralytics import YOLO
-from ultralytics.utils import metrics
-from pathlib import Path
-import sys
-
-# Setup path
-ROOT_DIR = Path(__file__).parent.parent.parent.parent.resolve()
-sys.path.append(str(ROOT_DIR))
-from config import *
-
-def custom_fitness(x):
-    """
-    x = [P, R, mAP@50, mAP@50-95]
-    Di default YOLO usa: 0.1 * mAP@50 + 0.9 * mAP@50-95
-    Noi usiamo: 1.0 * mAP@50 + 0.0 * mAP@50-95
-    """
-    return x[2] # Restituisce solo mAP@50
-
-# Sovrascriviamo la funzione della libreria
-metrics.fitness = custom_fitness
-
-def train_yolo_tuned():
-    dataset_yaml = YOLO_DATASET_PATH / "dataset.yaml"
-    
-    model_name = 'yolo12m.pt' 
-    model = YOLO(MODEL_PATH / model_name) 
-
-    print(f"Avvio Training Tuned (Loss Custom) di {model_name}...")
-    
-    results = model.train(
-        data=str(dataset_yaml),
-        epochs=50,
-        imgsz=1024,
-        batch=8,
-        
-        # --- TUNING DEI PESI DELLA LOSS (Il tuo tocco magico) ---
-        box=12.0,   # AUMENTATO (Default 7.5): PrioritÃƒÂ  massima alla precisione geometrica
-        dfl=2.0,    # AUMENTATO (Default 1.5): Migliora i bordi fini
-        cls=0.4,    # RIDOTTO (Default 0.5): Classificare ÃƒÂ¨ facile (poche classi), concentriamoci sui box
-        
-        # --- Altri parametri di stabilitÃƒÂ  ---
-        optimizer='AdamW',
-        lr0=0.0005, 
-        freeze=10,  # Congeliamo il backbone per stabilitÃƒÂ 
-        
-        project=str(MODEL_PATH / "training_runs"),
-        name='soccernet_high_precision',
-        exist_ok=True,
-        plots=True,
-        device=0,
-        workers=4
-    )
-    print("Training completato.")
-    
-
-if __name__ == "__main__":
-    train_yolo_tuned()
-
-
-================================================
-FILE: src/Detector/YOLO/inference.py
-================================================
-import os
-from ultralytics import YOLO
-import torch
-from config import *
-import shutil
-import sys
-from src.utils.get_best_device import get_best_device
-
-def run_detection_and_save_txt():
-    # Carica il modello
-    DEVICE = get_best_device()
-    model_name = 'best.pt'  # Puoi cambiare con il percorso del tuo modello
-    model = YOLO(MODEL_PATH / "training_runs" / "soccernet_high_precision" / "weights" / model_name) 
-    model.to(DEVICE)
-    print(f"Modello caricato su: {model.device}")
-
-    base_path = DATASET_TR23_TEST
-    output_folder = DETECTOR_OUTPUT_DIR / model_name.split(".")[0] # Cartella dove salveremo i txt per TrackEval
-    
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
-    else:
-        # Se la cartella esiste giÃƒÂ , controlliamo se ÃƒÂ¨ vuota
-        if len(os.listdir(output_folder)) > 0:
-            print(f"\nATTENZIONE: La cartella di output '{output_folder}' contiene giÃƒÂ  dei file.")
-            conferma = input("Vuoi eliminare TUTTI i file presenti e continuare? (y/n): ").strip().lower()
-
-            if conferma in ['s', 'si', 'y', 'yes']:
-                print("Eliminazione dei file in corso...")
-                for filename in os.listdir(output_folder):
-                    file_path = os.path.join(output_folder, filename)
-                    try:
-                        if os.path.isfile(file_path) or os.path.islink(file_path):
-                            os.unlink(file_path) # Elimina file o link simbolici
-                        elif os.path.isdir(file_path):
-                            shutil.rmtree(file_path) # Elimina sottocartelle
-                    except Exception as e:
-                        print(f"Impossibile eliminare {file_path}. Motivo: {e}")
-                print("Cartella svuotata con successo.\n")
-            else:
-                print("Operazione annullata. Esecuzione interrotta.")
-                sys.exit() # Esce dallo script
-
-
-    if not os.path.exists(base_path):
-        print(f"Errore: Percorso {base_path} non trovato.")
-        return
-
-    sequences = os.listdir(base_path)
-
-    for seq_name in sequences:
-        seq_path = os.path.join(base_path, seq_name)
-        img_source = os.path.join(seq_path, 'img1')
-
-        if os.path.isdir(seq_path) and os.path.exists(img_source):
-            print(f"--> Elaborazione sequenza: {seq_name}")
-            
-            # File di output per questa sequenza
-            res_file_path = os.path.join(output_folder, f"{seq_name}.txt")
-            
-            # Eseguiamo l'inferenza usando lo stream per non saturare la RAM
-            # stream=True restituisce un generatore
-            results = model.predict(source=img_source, conf=0.25, imgsz=1280, verbose=False, stream=True, device=0, classes=[0])
-            
-            with open(res_file_path, 'w') as f:
-                for result in results:
-                    # Otteniamo il numero del frame dal percorso del file
-                    # Es: '.../000001.jpg' -> frame_id = 1
-                    path = result.path
-                    frame_id = int(os.path.basename(path).split('.')[0])
-                    
-                    # I box sono in formato xywh (x_center, y_center, width, height) o xyxy
-                    # Per MOT serve: Top-Left X, Top-Left Y, Width, Height
-                    boxes = result.boxes.cpu().numpy()
-                    
-                    for box in boxes:
-                        # Estrai coordinate xywh (top-left)
-                        # box.xywh restituisce centro; box.xyxy restituisce angoli.
-                        # box.xywhn normalizzato. 
-                        # Ultralytics ha xywh come (center_x, center_y, w, h).
-                        # Noi vogliamo (top_left_x, top_left_y, w, h).
-                        
-                        x1, y1, x2, y2 = box.xyxy[0]
-                        w = x2 - x1
-                        h = y2 - y1
-                        conf = box.conf[0]
-                        cls = box.cls[0]
-
-                        # FILTRO: Assicuriamoci di salvare solo la classe "persona" (id 0 in COCO)
-                        if int(cls) == 0: 
-                            # Scriviamo nel formato MOT:
-                            # frame, id, x, y, w, h, conf, -1, -1, -1
-                            # Dato che ÃƒÂ¨ detection pura, ID mettiamo -1 o 1, non importa per DetA
-                            line = f"{frame_id},-1,{x1:.2f},{y1:.2f},{w:.2f},{h:.2f},{conf:.4f},-1,1,-1\n"
-                            f.write(line)
-            
-            print(f"Salvati risultati in: {res_file_path}")
-
-            with open(SEQMAP_FILE, 'a') as seqmap_file:
-                seqmap_file.write(f"{seq_name}\n")
-
-if __name__ == "__main__":
-    run_detection_and_save_txt()
-
-
-================================================
-FILE: src/Detector/YOLO/resume.py
-================================================
-from ultralytics import YOLO
-from config import MODEL_PATH
-from utils.get_best_device import get_best_device
-
-# Il blocco if __name__ == '__main__': ÃƒÂ¨ OBBLIGATORIO su Windows
-if __name__ == '__main__':
-    # Carica il peso 'last.pt' invece di 'yolov8n.pt'
-    model = YOLO(MODEL_PATH / "training_runs" / "soccernet_finetune" / "weights" / "last.pt")
-    model.to(get_best_device())
-    
-    # Il parametro resume=True ÃƒÂ¨ fondamentale
-    results = model.train(resume=True)
-
-
-================================================
-FILE: src/Detector/YOLO/train.py
-================================================
-# src/Detector/YOLO/train.py
-from ultralytics import YOLO
-from pathlib import Path
-import sys
-
-# Aggiungi root al path per importare config
-ROOT_DIR = Path(__file__).parent.parent.parent.parent.resolve()
-sys.path.append(str(ROOT_DIR))
-from config import *
-
-def train_yolo():
-    # Percorso del dataset convertito (generato dallo script precedente)
-    dataset_yaml = YOLO_DATASET_PATH / "dataset.yaml"
-    
-    if not dataset_yaml.exists():
-        print("Errore: Dataset YAML non trovato. Esegui prima convert_to_yolo.py")
-        return
-
-    # Carica modello pre-addestrato (es. yolov8m.pt o quello che usi)
-    # Nota: Assicurati che il nome del modello sia corretto (yolo12m non esiste ufficialmente, forse intendi v8 o v11?)
-    model_name = 'yolo12m.pt' 
-    model = YOLO(MODEL_PATH / model_name) 
-
-    print(f"Avvio training di {model_name}...")
-    
-    # Parametri training
-    results = model.train(
-        data=str(dataset_yaml),
-        epochs=50,             # Regola in base al tempo (50-100 ÃƒÂ¨ buono)
-        imgsz=640,             # O 1280 se hai GPU potente e vuoi vedere i piccoli dettagli
-        batch=8,              # Regola in base alla VRAM
-        project=str(MODEL_PATH / "training_runs"),
-        name='soccernet_finetune',
-        exist_ok=True,
-        device=0,              # GPU id
-        plots=True,
-        patience=10,            # Early stopping se non migliora per 10 epoche
-        cache=False,
-        workers=4
-    )
-    
-    print("Training completato.")
-    # Il modello migliore sarÃƒÂ  salvato in models/training_runs/soccernet_finetune/weights/best.pt
-
-if __name__ == "__main__":
-    train_yolo()
-
-
-================================================
-FILE: src/Eval/run_eval.py
-================================================
-import sys
-import os
-import numpy as np
-from trackeval.datasets import MotChallenge2DBox
-from trackeval.metrics import HOTA
-import trackeval
-from config import *
-
-def run_evaluation():
-    # --- CONFIGURAZIONE PATH ---
-    # GT_FOLDER deve puntare alla cartella che CONTIENE le sequenze (SNMOT-XXX)
-    gt_folder_abs = DATASET_TR23_TEST 
-    trackers_folder_abs = DETECTOR_OUTPUT_DIR 
-    seqmap_folder_abs = SEQMAP_DIR 
-    
-    print(f"Cercando GT in: {gt_folder_abs}") 
-    print(f"Cercando Seqmap in: {seqmap_folder_abs}")
-
-    # Verifica veloce
-    if not os.path.exists(os.path.join(gt_folder_abs, 'SNMOT-116', 'seqinfo.ini')):
-        print("ATTENZIONE: seqinfo.ini non trovato nemmeno nel path assoluto per 116!")
-
-    eval_config = {
-        'USE_PARALLEL': False,
-        'NUM_PARALLEL_CORES': 1,
-        'PRINT_RESULTS': False, # Mettiamo False per stampare solo i nostri dati puliti
-        'PRINT_ONLY_COMBINED': False,
-        'OUTPUT_SUMMARY': True,
-        'OUTPUT_EMPTY_CLASSES': False,
-        'OUTPUT_DETAILED': False,
-        'PLOT_CURVES': False,
-    }
-
-    dataset_config = {
-        'GT_FOLDER': gt_folder_abs, 
-        'TRACKERS_FOLDER': trackers_folder_abs,
-        'OUTPUT_FOLDER': None,
-        'TRACKERS_TO_EVAL': None, 
-        'CLASSES_TO_EVAL': ['pedestrian'], 
-        'BENCHMARK': 'MOT17', 
-        'SPLIT_TO_EVAL': 'test',
-        'INPUT_AS_ZIP': False,
-        'PRINT_CONFIG': False,
-        'DO_PREPROC': False,
-        'TRACKER_SUB_FOLDER': '', 
-        'OUTPUT_SUB_FOLDER': '',
-        'OUTPUT_SUMMARY': True, 
-        'SKIP_SPLIT_FOL': True, 
-        'SEQ_INFO': None,
-        'SUB_FOLDER': 'gt', 
-        'SEQMAP_FOLDER': seqmap_folder_abs, 
-        'SEQMAP_FILE': SEQMAP_FILE, 
-    }
-    
-    # NOTA: Qui NON chiamiamo piÃƒÂ¹ fix_ids_for_detection_only()
-    # perchÃƒÂ© per il tracking servono gli ID originali del tuo algoritmo!
-    
-    dataset = MotChallenge2DBox(dataset_config)
-    hota = HOTA()
-    
-    evaluator = trackeval.Evaluator(eval_config)
-    try:
-        np.float = float
-        np.int = int
-    except AttributeError:
-        pass
-        
-    results = evaluator.evaluate([dataset], [hota])
-    
-    if results:
-        dataset_res = results[0]
-        dataset_name = list(dataset_res.keys())[0]
-        tracker_res = dataset_res[dataset_name]
-        tracker_name = list(tracker_res.keys())[0]
-        sequences_res = tracker_res[tracker_name]
-        
-        seq_name = 'COMBINED_SEQ'
-        if seq_name not in sequences_res:
-            seq_name = list(sequences_res.keys())[0]
-            print(f"Attenzione: 'COMBINED_SEQ' non trovato. Mostro i risultati per: {seq_name}")
-        
-        # Percorso: Dataset -> Tracker -> Sequence -> Class -> Metric
-        stats = sequences_res[seq_name]['pedestrian']['HOTA']
-        
-        # --- CORREZIONE CRUCIALE: INDICE 9 ---
-        # TrackEval calcola 19 soglie (0.05 ... 0.95).
-        # index 0 = 0.05
-        # index 9 = 0.50 (Quello che vuole la competizione)
-        idx = 9
-
-        deta_score = stats['DetA'][idx] * 100 
-        assa_score = stats['AssA'][idx] * 100
-        hota_score = stats['HOTA'][idx] * 100
-
-        print(f"\nMetriche Tracking @ IoU 0.5 ({tracker_name} - {seq_name}):")
-        print(f"HOTA: {hota_score:.2f}%  <-- QUESTO ÃƒÂ¨ il valore per la classifica")
-        print(f"DetA: {deta_score:.2f}%")
-        print(f"AssA: {assa_score:.2f}%")
-        
-        det_re = stats['DetRe'][idx] * 100
-        det_pr = stats['DetPr'][idx] * 100
-        print(f"DetRe (Recall): {det_re:.2f}%")
-        print(f"DetPr (Precision): {det_pr:.2f}%")
-
-if __name__ == "__main__":
-    run_evaluation()
-
-
-================================================
-FILE: src/Eval/run_eval_detection_only.py
-================================================
-import sys
-import os
-import numpy as np
-from trackeval.datasets import MotChallenge2DBox
-from trackeval.metrics import HOTA
-import trackeval
-from config import * # Assicurati che config.py sia accessibile
-
-def fix_ids_for_detection_only(trackers_folder):
-    """
-    Scansiona i file .txt dei risultati e assegna un ID univoco a ogni riga.
-    NOTA: Questo distrugge le informazioni di tracking temporale (AssA sarÃƒÂ  ~0),
-    ma ÃƒÂ¨ perfetto se ti interessa calcolare SOLO la DetA (Detection Accuracy).
-    """
-    import glob
-    
-    txt_files = glob.glob(os.path.join(trackers_folder, '**', '*.txt'), recursive=True)
-    
-    if not txt_files:
-        print(f"Nessun file .txt trovato in {trackers_folder} da correggere.")
-        return
-
-    print(f"Correzione ID per {len(txt_files)} file (Detection only mode)...")
-    
-    for txt_file in txt_files:
-        with open(txt_file, 'r') as f:
-            lines = f.readlines()
-        
-        new_lines = []
-        for i, line in enumerate(lines):
-            parts = line.strip().split(',')
-            if len(parts) < 6: continue
-            
-            # Assegna un ID progressivo unico per riga (rompe il tracking, ok per detection)
-            parts[1] = str(i + 1) 
-            
-            new_lines.append(','.join(parts) + '\n')
-            
-        with open(txt_file, 'w') as f:
-            f.writelines(new_lines)
-    
-    print("Correzione ID completata.")
-
-def run_evaluation():
-    # --- CONFIGURAZIONE PATH ---
-    gt_folder_abs = DATASET_TR23_TEST 
-    trackers_folder_abs = DETECTOR_OUTPUT_DIR 
-    seqmap_folder_abs = SEQMAP_DIR 
-    
-    print(f"GT Folder: {gt_folder_abs}") 
-    print(f"Seqmap Folder: {seqmap_folder_abs}")
-
-    # Configurazione di base per l'evaluator
-    eval_config = {
-        'USE_PARALLEL': False,
-        'NUM_PARALLEL_CORES': 1,
-        'PRINT_RESULTS': False,  # Mettiamo False per non intasare la console, stampiamo noi i dati custom
-        'PRINT_ONLY_COMBINED': False,
-        'OUTPUT_SUMMARY': True,
-        'OUTPUT_EMPTY_CLASSES': False,
-        'OUTPUT_DETAILED': False,
-        'PLOT_CURVES': True,
-    }
-
-    dataset_config = {
-        'GT_FOLDER': gt_folder_abs, 
-        'TRACKERS_FOLDER': trackers_folder_abs,
-        'OUTPUT_FOLDER': None,
-        'TRACKERS_TO_EVAL': None, 
-        'CLASSES_TO_EVAL': ['pedestrian'], 
-        'BENCHMARK': 'MOT17', 
-        'SPLIT_TO_EVAL': 'test',
-        'INPUT_AS_ZIP': False,
-        'PRINT_CONFIG': False,
-        'DO_PREPROC': False,
-        'TRACKER_SUB_FOLDER': '', 
-        'OUTPUT_SUB_FOLDER': '',
-        'OUTPUT_SUMMARY': True, 
-        'SKIP_SPLIT_FOL': True, 
-        'SEQ_INFO': None,
-        'SUB_FOLDER': 'gt', 
-        'SEQMAP_FOLDER': seqmap_folder_abs, 
-        'SEQMAP_FILE': SEQMAP_FILE, 
-    }
-
-    # Eseguiamo la correzione degli ID per calcolare la Detection pura
-    fix_ids_for_detection_only(trackers_folder_abs)
-    
-    dataset = MotChallenge2DBox(dataset_config)
-    hota = HOTA()
-    
-    evaluator = trackeval.Evaluator(eval_config)
-    
-    # Fix per compatibilitÃƒÂ  numpy
-    try:
-        np.float = float
-        np.int = int
-    except AttributeError:
-        pass
-
-    # Esecuzione
-    results = evaluator.evaluate([dataset], [hota])
-    
-    if results:
-        dataset_res = results[0]
-        dataset_name = list(dataset_res.keys())[0]
-        tracker_res = dataset_res[dataset_name]
-        tracker_name = list(tracker_res.keys())[0]
-        sequences_res = tracker_res[tracker_name]
-        
-        seq_name = 'COMBINED_SEQ'
-        if seq_name not in sequences_res:
-            seq_name = list(sequences_res.keys())[0]
-            print(f"Attenzione: COMBINED_SEQ non trovato. Uso: {seq_name}")
-        
-        # Estrazione metriche HOTA
-        stats = sequences_res[seq_name]['pedestrian']['HOTA']
-        
-        # --- MODIFICA CRUCIALE PER ESTRARRE SOLO 0.5 ---
-        # L'array 'DetA' ha 19 valori corrispondenti alle soglie:
-        # 0.05, 0.10, ..., 0.50, ..., 0.95
-        # L'indice 9 corrisponde esattamente alla soglia 0.50
-        index_05 = 9 
-        
-        # Estrazione valori specifici all'indice 9
-        deta_05 = stats['DetA'][index_05] * 100
-        det_re_05 = stats['DetRe'][index_05] * 100
-        det_pr_05 = stats['DetPr'][index_05] * 100
-        
-        # NOTA: Calcoliamo anche HOTA e AssA a 0.5, ma attenzione:
-        # PoichÃƒÂ© usi "fix_ids_for_detection_only", AssA sarÃƒÂ  bassissima (~0),
-        # e quindi anche HOTA sarÃƒÂ  bassissima. 
-        # Tuttavia, DetA sarÃƒÂ  corretta.
-        hota_05 = stats['HOTA'][index_05] * 100
-        assa_05 = stats['AssA'][index_05] * 100
-
-        print("-" * 40)
-        print(f"RISULTATI SPECIFICI PER SOGLIA IoU = 0.5 ({tracker_name})")
-        print("-" * 40)
-        print(f"DetA @ 0.5 (Detection Accuracy):  {deta_05:.2f}%")
-        print(f"DetRe @ 0.5 (Recall):             {det_re_05:.2f}%")
-        print(f"DetPr @ 0.5 (Precision):          {det_pr_05:.2f}%")
-        print("-" * 40)
-        print("Metriche di Tracking (saranno basse se hai resettato gli ID):")
-        print(f"AssA @ 0.5 (Association Acc):     {assa_05:.2f}%")
-        print(f"HOTA @ 0.5:                       {hota_05:.2f}%")
-        print("-" * 40)
-
-if __name__ == "__main__":
-    run_evaluation()
-
-
-================================================
-FILE: src/utils/__init__.py
-================================================
-[Empty file]
-
-
-================================================
-FILE: src/utils/get_best_device.py
-================================================
-import torch
-
-def get_best_device():
-    if torch.cuda.is_available():
-        return 'cuda'
-    
-    if torch.backends.mps.is_available():
-        return 'mps'
-    
-    return 'cpu'
-
-
-
-
-
-================================================
-FILE: conda/build_run.bat
-================================================
-
-@echo off
-echo [INFO] Avvio procedura combinata Build & Run...
-
-:: Chiama lo script di build
-call .\conda\build\build.bat
-
-:: Controlla se c'Ã¨ stato un errore nella build
-if %errorlevel% neq 0 (
-    echo [ERROR] La creazione dell'environment ha fallito. Impossibile eseguire il run.
-    pause
-    exit /b %errorlevel%
-)
-
-echo [INFO] Build completata con successo. Avvio applicazione...
-echo ---------------------------------------------------------
-
-:: Chiama lo script di run
-call conda\run\run.bat
-
-
-================================================
-FILE: conda/build_run.sh
-================================================
-
-#!/bin/bash
-
-echo "[INFO] Avvio procedura combinata Build & Run..."
-
-# Assicura che gli script interni abbiano i permessi di esecuzione
-chmod +x conda/build/build.sh
-chmod +x conda/run/run.sh
-
-# Esegue la build. 
-# L'operatore '&&' assicura che il 'run' parta solo se la 'build' finisce senza errori.
-./conda/build/build.sh && \
-echo "[INFO] Build completata. Avvio applicazione..." && \
-echo "---------------------------------------------------------" && \
-./conda/run/run.sh
-
-
-================================================
-FILE: conda/delete/delete.bat
-================================================
-@echo off
-echo Removing Conda environment 'soccer_tracking'...
-call conda env remove -n soccer_tracking
-echo Deletion complete.
-pause
-
-
-================================================
-FILE: conda/delete/delete.sh
-================================================
-#!/bin/bash
-echo "Removing Conda environment 'soccer_tracking'..."
-conda env remove -n soccer_tracking
-echo "Deletion complete."
-
-
-================================================
-FILE: conda/run/run.bat
-================================================
-@echo off
-call conda activate soccer_tracking
-python main.py
-pause
-
-
-================================================
-FILE: conda/run/run.sh
-================================================
-#!/bin/bash
-# Initialize conda for shell interaction
-eval "$(conda shell.bash hook)"
-conda activate soccer_tracking
-
-# Run the main script
-# Adjust the path to your python script if necessary
-python main.py
-
-
-================================================
-FILE: dataset/tracking-2023/dataset_yolo/dataset.yaml
-================================================
-
-path: C:/Users/leona/Documents/AV_Project/ArtificialVisionGroup17/dataset/tracking-2023/dataset_yolo
-train: images/train
-val: images/val
-names:
-  0: player
-
-
-
-================================================
-FILE: dataset/tracking-2023/dataset_yolo/splits/train.txt
-================================================
-SNMOT-060
-SNMOT-061
-SNMOT-062
-SNMOT-063
-SNMOT-065
-SNMOT-066
-SNMOT-067
-SNMOT-068
-SNMOT-069
-SNMOT-070
-SNMOT-071
-SNMOT-074
-SNMOT-075
-SNMOT-076
-SNMOT-077
-SNMOT-097
-SNMOT-098
-SNMOT-099
-SNMOT-101
-SNMOT-102
-SNMOT-103
-SNMOT-104
-SNMOT-105
-SNMOT-106
-SNMOT-109
-SNMOT-110
-SNMOT-111
-SNMOT-112
-SNMOT-113
-SNMOT-114
-SNMOT-115
-SNMOT-151
-SNMOT-152
-SNMOT-153
-SNMOT-154
-SNMOT-156
-SNMOT-157
-SNMOT-158
-SNMOT-159
-SNMOT-161
-SNMOT-162
-SNMOT-163
-SNMOT-164
-SNMOT-166
-SNMOT-168
-SNMOT-169
-SNMOT-170
-
-
-================================================
-FILE: dataset/tracking-2023/dataset_yolo/splits/val.txt
-================================================
-SNMOT-064
-SNMOT-072
-SNMOT-073
-SNMOT-100
-SNMOT-107
-SNMOT-108
-SNMOT-155
-SNMOT-160
-SNMOT-165
-SNMOT-167
-
-
-================================================
-FILE: execute_on_colab/requiremets.txt
-================================================
-numpy<2.0
-pandas
-opencv-python
-matplotlib
-tqdm
-scipy
-pyyaml
-torch>=2.3.1
-torchvision>=0.18.1
-ultralytics
-supervision
-einops
-decord
-SoccerNet
-git+https://github.com/JonathonLuiten/TrackEval.git
-git+https://github.com/facebookresearch/sam3.git
-scikit-learn
-
-
-
-================================================
-FILE: execute_on_colab/run.ipynb
-================================================
-Error processing notebook: 'text/plain'
-
-
-================================================
-FILE: models/training_runs/soccernet_high_precision/args.yaml
-================================================
-task: detect
-mode: train
-model: C:\Users\leona\Documents\AV_Project\ArtificialVisionGroup17\models\yolo12m.pt
-data: C:\Users\leona\Documents\AV_Project\ArtificialVisionGroup17\dataset\tracking-2023\dataset_yolo\dataset.yaml
-epochs: 50
-time: null
-patience: 100
-batch: 4
-imgsz: 1280
-save: true
-save_period: -1
-cache: false
-device: '0'
-workers: 4
-project: C:\Users\leona\Documents\AV_Project\ArtificialVisionGroup17\models\training_runs
-name: soccernet_high_precision
-exist_ok: true
-pretrained: true
-optimizer: AdamW
-verbose: true
-seed: 0
-deterministic: true
-single_cls: false
-rect: false
-cos_lr: false
-close_mosaic: 10
-resume: false
-amp: true
-fraction: 1.0
-profile: false
-freeze: 10
-multi_scale: false
-compile: false
-overlap_mask: true
-mask_ratio: 4
-dropout: 0.0
-val: true
-split: val
-save_json: false
-conf: null
-iou: 0.7
-max_det: 300
-half: false
-dnn: false
-plots: true
-source: null
-vid_stride: 1
-stream_buffer: false
-visualize: false
-augment: false
-agnostic_nms: false
-classes: null
-retina_masks: false
-embed: null
-show: false
-save_frames: false
-save_txt: false
-save_conf: false
-save_crop: false
-show_labels: true
-show_conf: true
-show_boxes: true
-line_width: null
-format: torchscript
-keras: false
-optimize: false
-int8: false
-dynamic: false
-simplify: true
-opset: null
-workspace: null
-nms: false
-lr0: 0.0005
-lrf: 0.01
-momentum: 0.937
-weight_decay: 0.0005
-warmup_epochs: 3.0
-warmup_momentum: 0.8
-warmup_bias_lr: 0.1
 box: 7.5
 cls: 1.5
 dfl: 1.5
@@ -2036,56 +388,56 @@ save_dir: C:\Users\leona\Documents\AV_Project\ArtificialVisionGroup17\models\tra
 FILE: models/training_runs/soccernet_high_precision/results.csv
 ================================================
 epoch,time,train/box_loss,train/cls_loss,train/dfl_loss,metrics/precision(B),metrics/recall(B),metrics/mAP50(B),metrics/mAP50-95(B),val/box_loss,val/cls_loss,val/dfl_loss,lr/pg0,lr/pg1,lr/pg2
-1,453.062,1.43238,2.52294,1.08207,0.95394,0.91622,0.97104,0.593,1.2732,1.98547,1.11669,0.0669273,0.000166195,0.000166195
-2,903.455,1.38106,2.21562,1.06601,0.92028,0.86592,0.94949,0.5803,1.26483,2.39362,1.08727,0.033754,0.000326271,0.000326271
-3,1351.44,1.3693,2.26258,1.05759,0.95114,0.88097,0.96037,0.59,1.26475,2.32492,1.10737,0.000574175,0.000479747,0.000479747
-4,1799.52,1.35774,2.27536,1.05601,0.94909,0.8842,0.96594,0.60413,1.25432,2.0127,1.0758,0.0004703,0.0004703,0.0004703
-5,2249.8,1.34861,2.20374,1.03799,0.94832,0.86874,0.96006,0.61162,1.20726,2.11527,1.08582,0.0004604,0.0004604,0.0004604
-6,2701.09,1.32466,2.13749,1.04313,0.94587,0.89431,0.96643,0.60098,1.26016,2.00415,1.0928,0.0004505,0.0004505,0.0004505
-7,3150.23,1.30454,2.13807,1.03973,0.94561,0.87854,0.96517,0.60519,1.25121,2.0724,1.10139,0.0004406,0.0004406,0.0004406
-8,3596.78,1.30153,2.08781,1.0368,0.94593,0.87885,0.96495,0.62103,1.21841,2.03121,1.07143,0.0004307,0.0004307,0.0004307
-9,4045.81,1.29238,2.10581,1.03093,0.95138,0.88948,0.96764,0.61775,1.22339,2.04943,1.07671,0.0004208,0.0004208,0.0004208
-10,4497.05,1.28368,2.06125,1.02654,0.94966,0.89575,0.97017,0.62278,1.22264,1.96601,1.07208,0.0004109,0.0004109,0.0004109
-11,4947.81,1.28436,2.04648,1.01914,0.95281,0.86913,0.9609,0.61834,1.23115,2.09469,1.07909,0.000401,0.000401,0.000401
-12,5396.9,1.26774,2.03033,1.02925,0.95354,0.90031,0.97283,0.62122,1.2371,1.9085,1.0767,0.0003911,0.0003911,0.0003911
-13,5844.02,1.26111,1.97822,1.00958,0.94766,0.88785,0.96654,0.61895,1.21821,1.99015,1.07316,0.0003812,0.0003812,0.0003812
-14,6291.89,1.25699,2.01521,1.02399,0.94909,0.86475,0.9613,0.61935,1.21708,2.03679,1.07601,0.0003713,0.0003713,0.0003713
-15,6742,1.26169,2.00028,1.01382,0.95191,0.90794,0.9746,0.63407,1.19695,1.84114,1.07774,0.0003614,0.0003614,0.0003614
-16,7194.68,1.26749,2.02632,1.01573,0.95461,0.90335,0.97226,0.62463,1.23626,1.92047,1.07741,0.0003515,0.0003515,0.0003515
-17,7643.85,1.25653,1.9749,1.01608,0.95189,0.90811,0.97181,0.63024,1.22588,1.84824,1.09105,0.0003416,0.0003416,0.0003416
-18,8094.86,1.24741,1.98121,1.00982,0.95023,0.87778,0.96607,0.63473,1.18446,1.91479,1.06472,0.0003317,0.0003317,0.0003317
-19,8547.83,1.23088,1.95004,1.00443,0.95327,0.90471,0.97293,0.63152,1.20806,1.88024,1.07459,0.0003218,0.0003218,0.0003218
-20,9003.04,1.23727,1.96774,1.00781,0.95064,0.89416,0.97138,0.63085,1.19685,1.88546,1.0719,0.0003119,0.0003119,0.0003119
-21,9452.45,1.23984,1.94226,1.01012,0.94851,0.8937,0.96942,0.63469,1.19621,1.90278,1.0653,0.000302,0.000302,0.000302
-22,9899.84,1.23347,1.93179,1.00819,0.95305,0.9068,0.97275,0.63565,1.20743,1.81795,1.07658,0.0002921,0.0002921,0.0002921
-23,10347.3,1.22634,1.89523,1.00496,0.93046,0.90027,0.96728,0.63024,1.19301,1.93543,1.0725,0.0002822,0.0002822,0.0002822
-24,10793.9,1.21938,1.93461,0.99915,0.95806,0.914,0.97471,0.63927,1.21331,1.82026,1.07898,0.0002723,0.0002723,0.0002723
-25,11241.3,1.22538,1.9051,1.00478,0.94658,0.90933,0.97237,0.63016,1.21413,1.89973,1.07938,0.0002624,0.0002624,0.0002624
-26,11689.1,1.2232,1.89739,0.99708,0.95912,0.9242,0.97662,0.64089,1.21975,1.76521,1.07042,0.0002525,0.0002525,0.0002525
-27,12136.7,1.21338,1.88363,0.99696,0.94751,0.91426,0.97369,0.63973,1.18813,1.84923,1.06397,0.0002426,0.0002426,0.0002426
-28,12583.6,1.20567,1.8578,0.99527,0.95346,0.9145,0.97548,0.6396,1.20362,1.81072,1.06732,0.0002327,0.0002327,0.0002327
-29,13030.8,1.20414,1.88842,0.99709,0.95382,0.92175,0.97798,0.64048,1.19267,1.74978,1.07437,0.0002228,0.0002228,0.0002228
-30,13478,1.19064,1.87607,0.98907,0.93633,0.89497,0.96719,0.62727,1.20081,1.97349,1.06312,0.0002129,0.0002129,0.0002129
-31,13925.7,1.18484,1.81232,0.98677,0.95147,0.91255,0.97488,0.63898,1.2001,1.81654,1.06789,0.000203,0.000203,0.000203
-32,14372.5,1.19161,1.84205,0.99487,0.94677,0.91684,0.97384,0.64243,1.19396,1.8075,1.06611,0.0001931,0.0001931,0.0001931
-33,14820.1,1.18689,1.84886,0.98491,0.94661,0.91669,0.97448,0.6417,1.1892,1.81867,1.06918,0.0001832,0.0001832,0.0001832
-34,15267,1.18849,1.8145,0.98598,0.94363,0.89995,0.97154,0.63903,1.18662,1.87091,1.06048,0.0001733,0.0001733,0.0001733
-35,15713.9,1.17505,1.80427,0.98888,0.93997,0.90607,0.97235,0.63749,1.19936,1.86538,1.0686,0.0001634,0.0001634,0.0001634
-36,16161.1,1.17531,1.817,0.98003,0.95482,0.92057,0.97632,0.63977,1.22462,1.72227,1.07931,0.0001535,0.0001535,0.0001535
-37,16608.1,1.17069,1.78639,0.98095,0.94651,0.89598,0.97124,0.63111,1.20254,1.88593,1.07124,0.0001436,0.0001436,0.0001436
-38,17055,1.16292,1.7776,0.97729,0.95322,0.91961,0.97767,0.6431,1.19511,1.75651,1.06586,0.0001337,0.0001337,0.0001337
-39,17502,1.1532,1.74018,0.97387,0.94622,0.91524,0.97498,0.64262,1.19285,1.82901,1.06031,0.0001238,0.0001238,0.0001238
-40,17949.6,1.16399,1.74753,0.96827,0.95433,0.92662,0.97713,0.64707,1.19437,1.71322,1.05632,0.0001139,0.0001139,0.0001139
-41,18422.8,1.12368,1.72074,0.99283,0.94786,0.91663,0.97578,0.64145,1.19295,1.82167,1.05909,0.000104,0.000104,0.000104
-42,18870.9,1.11001,1.70984,0.99417,0.95026,0.91716,0.97618,0.64334,1.19473,1.74796,1.06687,9.41e-05,9.41e-05,9.41e-05
-43,19318.7,1.09934,1.66601,0.99335,0.94508,0.91816,0.97564,0.6471,1.19455,1.7627,1.06781,8.42e-05,8.42e-05,8.42e-05
-44,19766.3,1.103,1.69028,0.99498,0.94351,0.9079,0.97326,0.63567,1.1975,1.8734,1.06138,7.43e-05,7.43e-05,7.43e-05
-45,20213.6,1.09912,1.66172,0.99253,0.95463,0.92413,0.97774,0.64774,1.19875,1.72515,1.06166,6.44e-05,6.44e-05,6.44e-05
-46,20662.5,1.09917,1.64768,0.98803,0.952,0.91964,0.97661,0.6443,1.19928,1.73381,1.06364,5.45e-05,5.45e-05,5.45e-05
-47,21110.3,1.08665,1.64562,0.98301,0.94928,0.92402,0.97766,0.64362,1.20538,1.73848,1.06698,4.46e-05,4.46e-05,4.46e-05
-48,21558.8,1.09373,1.62008,0.99054,0.95327,0.92636,0.97873,0.64902,1.19476,1.70011,1.06443,3.47e-05,3.47e-05,3.47e-05
-49,22005.4,1.08328,1.62013,0.9879,0.95155,0.92488,0.97815,0.64897,1.18889,1.70581,1.06337,2.48e-05,2.48e-05,2.48e-05
-50,22453.6,1.081,1.62322,0.98782,0.94981,0.92234,0.97749,0.6479,1.18959,1.71737,1.06493,1.49e-05,1.49e-05,1.49e-05
+1,447.569,1.42475,2.22499,1.05946,0.95868,0.9214,0.96817,0.59674,1.28792,1.94058,1.06499,0.0669119,0.000166272,0.000166272
+2,887.143,1.36768,1.97302,1.03163,0.95799,0.92597,0.97004,0.59467,1.30665,1.98179,1.06837,0.0337387,0.000326346,0.000326346
+3,1317.94,1.36819,1.96584,1.03074,0.95997,0.92524,0.97107,0.61393,1.25688,1.86399,1.05743,0.00055881,0.000479821,0.000479821
+4,1749.57,1.33809,1.94004,1.02651,0.96154,0.92442,0.96987,0.61122,1.28894,1.84921,1.06226,0.0004703,0.0004703,0.0004703
+5,2178.94,1.33052,1.93715,1.0135,0.95649,0.92121,0.96939,0.62146,1.23802,1.84359,1.04046,0.0004604,0.0004604,0.0004604
+6,2607.79,1.32147,1.86688,1.0067,0.945,0.91852,0.9689,0.61528,1.25833,1.8719,1.05105,0.0004505,0.0004505,0.0004505
+7,3037.92,1.3269,1.88704,1.01525,0.95404,0.93059,0.97126,0.6225,1.24813,1.83806,1.04554,0.0004406,0.0004406,0.0004406
+8,3466.62,1.30661,1.85714,1.00729,0.95051,0.91299,0.96921,0.62049,1.24776,1.82743,1.04766,0.0004307,0.0004307,0.0004307
+9,3896.52,1.30312,1.85366,1.00643,0.95512,0.93434,0.97116,0.61975,1.25311,1.81044,1.04269,0.0004208,0.0004208,0.0004208
+10,4325.21,1.30346,1.84591,1.00634,0.95688,0.92377,0.97159,0.634,1.21538,1.80568,1.03421,0.0004109,0.0004109,0.0004109
+11,4754.44,1.29487,1.82269,1.00001,0.93798,0.92601,0.97019,0.61983,1.24011,1.81233,1.03511,0.000401,0.000401,0.000401
+12,5182.95,1.28976,1.80785,0.9958,0.9499,0.92779,0.97172,0.62028,1.25242,1.81158,1.03641,0.0003911,0.0003911,0.0003911
+13,5616.6,1.28064,1.80549,0.99726,0.96338,0.93376,0.97371,0.63449,1.22811,1.7293,1.03506,0.0003812,0.0003812,0.0003812
+14,6046.26,1.28075,1.79029,0.99214,0.96074,0.93508,0.97383,0.62471,1.2663,1.7461,1.04171,0.0003713,0.0003713,0.0003713
+15,6475.1,1.27297,1.77592,0.99174,0.95994,0.93823,0.97481,0.62864,1.25394,1.70134,1.03916,0.0003614,0.0003614,0.0003614
+16,6902.98,1.26282,1.77012,0.98337,0.95679,0.93628,0.97384,0.63151,1.23729,1.72367,1.03672,0.0003515,0.0003515,0.0003515
+17,7332.22,1.26656,1.76802,0.98617,0.96207,0.93803,0.97493,0.63468,1.22819,1.7153,1.02989,0.0003416,0.0003416,0.0003416
+18,7760.29,1.26348,1.76519,0.98723,0.95956,0.9349,0.97411,0.62429,1.27405,1.71117,1.04473,0.0003317,0.0003317,0.0003317
+19,8189.46,1.25605,1.76327,0.98634,0.9576,0.93584,0.97429,0.62858,1.24221,1.76818,1.03298,0.0003218,0.0003218,0.0003218
+20,8617.67,1.25469,1.75562,0.98974,0.9578,0.93848,0.97517,0.62617,1.24876,1.793,1.03722,0.0003119,0.0003119,0.0003119
+21,9046.98,1.24354,1.74703,0.98295,0.9595,0.94142,0.97406,0.62691,1.24121,1.73882,1.03508,0.000302,0.000302,0.000302
+22,9475.05,1.23584,1.72658,0.9843,0.96071,0.94273,0.97532,0.63368,1.23811,1.69519,1.03141,0.0002921,0.0002921,0.0002921
+23,9903.4,1.23422,1.71204,0.98296,0.95972,0.93131,0.97393,0.63677,1.22855,1.71784,1.02759,0.0002822,0.0002822,0.0002822
+24,10331.5,1.23661,1.71899,0.98367,0.9584,0.92701,0.97268,0.63623,1.2044,1.78085,1.02322,0.0002723,0.0002723,0.0002723
+25,10760.6,1.22654,1.70163,0.97535,0.96055,0.94304,0.97691,0.64068,1.23192,1.64138,1.03212,0.0002624,0.0002624,0.0002624
+26,11189.1,1.22765,1.69923,0.97694,0.96461,0.93993,0.97609,0.63883,1.22881,1.66931,1.02809,0.0002525,0.0002525,0.0002525
+27,11619.3,1.22432,1.68023,0.97218,0.96044,0.94294,0.97602,0.6381,1.22186,1.69699,1.02421,0.0002426,0.0002426,0.0002426
+28,12047.2,1.22033,1.6854,0.9793,0.96217,0.9365,0.97504,0.63678,1.23162,1.66291,1.02865,0.0002327,0.0002327,0.0002327
+29,12475.5,1.2175,1.71419,0.97196,0.96138,0.93703,0.97517,0.64064,1.21686,1.67209,1.02421,0.0002228,0.0002228,0.0002228
+30,12903.5,1.20862,1.66255,0.9713,0.9579,0.93953,0.97602,0.63905,1.22365,1.68362,1.02473,0.0002129,0.0002129,0.0002129
+31,13331.1,1.21134,1.68321,0.97011,0.95955,0.93416,0.97451,0.63865,1.21962,1.70244,1.02457,0.000203,0.000203,0.000203
+32,13758.9,1.20666,1.66219,0.97105,0.9592,0.93843,0.97631,0.64161,1.21473,1.67525,1.02512,0.0001931,0.0001931,0.0001931
+33,14186.9,1.20564,1.65228,0.97004,0.96207,0.93476,0.97526,0.63966,1.21864,1.65701,1.02506,0.0001832,0.0001832,0.0001832
+34,14614.5,1.203,1.64672,0.96582,0.96085,0.9376,0.97665,0.63776,1.23375,1.65289,1.02936,0.0001733,0.0001733,0.0001733
+35,15042,1.19375,1.63764,0.96448,0.96039,0.93335,0.97559,0.6419,1.22889,1.63489,1.02736,0.0001634,0.0001634,0.0001634
+36,15470.6,1.19486,1.64102,0.96423,0.96238,0.93903,0.97623,0.64042,1.22618,1.62954,1.02917,0.0001535,0.0001535,0.0001535
+37,15898.6,1.19341,1.61721,0.96263,0.96631,0.94548,0.97785,0.64335,1.22626,1.5961,1.027,0.0001436,0.0001436,0.0001436
+38,16327.1,1.1875,1.63686,0.96185,0.96213,0.94051,0.97615,0.64022,1.23035,1.62712,1.02631,0.0001337,0.0001337,0.0001337
+39,16755.2,1.17982,1.62287,0.96113,0.96086,0.93497,0.97601,0.64319,1.21675,1.65197,1.0227,0.0001238,0.0001238,0.0001238
+40,17183,1.18055,1.6151,0.9603,0.96529,0.94083,0.97646,0.64042,1.22703,1.60732,1.02572,0.0001139,0.0001139,0.0001139
+41,17637.2,1.14196,1.55877,1.00045,0.96135,0.93736,0.9753,0.64043,1.22165,1.62466,1.02363,0.000104,0.000104,0.000104
+42,18061.5,1.13397,1.54957,0.99986,0.96317,0.94016,0.97603,0.64107,1.22981,1.60991,1.0305,9.41e-05,9.41e-05,9.41e-05
+43,18485.6,1.13515,1.54654,0.99803,0.96248,0.94094,0.9755,0.63891,1.22657,1.62246,1.02637,8.42e-05,8.42e-05,8.42e-05
+44,18910.5,1.12502,1.53339,0.99562,0.96535,0.9419,0.97654,0.64281,1.22792,1.596,1.02637,7.43e-05,7.43e-05,7.43e-05
+45,19333.5,1.12433,1.52733,0.99292,0.96351,0.93808,0.97622,0.64354,1.22052,1.61936,1.02428,6.44e-05,6.44e-05,6.44e-05
+46,19757.6,1.11991,1.52631,0.99347,0.96395,0.9427,0.97615,0.64031,1.23533,1.59188,1.02949,5.45e-05,5.45e-05,5.45e-05
+47,20182.9,1.12514,1.51165,0.99349,0.96352,0.93894,0.97636,0.64475,1.22346,1.60763,1.02576,4.46e-05,4.46e-05,4.46e-05
+48,20606.8,1.11644,1.50302,0.99268,0.96601,0.94136,0.97677,0.64802,1.2217,1.55978,1.02792,3.47e-05,3.47e-05,3.47e-05
+49,21030.6,1.11139,1.4796,0.99196,0.96444,0.93941,0.97655,0.64586,1.22468,1.5829,1.02631,2.48e-05,2.48e-05,2.48e-05
+50,21455.5,1.11158,1.4961,0.99229,0.96402,0.94005,0.97696,0.64517,1.2252,1.57847,1.02707,1.49e-05,1.49e-05,1.49e-05
 
 
 
@@ -2194,7 +546,7 @@ sys.path.append(str(ROOT_DIR))
 
 
 # Definiamo il tasso di campionamento (1 frame ogni 25)
-TRAIN_SUBSAMPLE_RATE = 25
+TRAIN_SUBSAMPLE_RATE = 10
 
 # Importiamo le costanti definite in config
 from config import DATASET_TR23_TRAIN, YOLO_DATASET_PATH, SPLIT_DIR
@@ -2805,8 +1157,8 @@ def train_yolo_tuned():
     results = model.train(
         data=str(dataset_yaml),
         epochs=50,
-        imgsz=1280,
-        batch=4,
+        imgsz=1024,
+        batch=8,
         
         # --- TUNING DEI PESI DELLA LOSS (Il tuo tocco magico) ---
         box=7.5,    # (Default): Allows slightly looser boxes, increases recall
@@ -2901,7 +1253,7 @@ def run_detection_and_save_txt():
             
             # Eseguiamo l'inferenza usando lo stream per non saturare la RAM
             # stream=True restituisce un generatore
-            results = model.predict(source=img_source, conf=0.25, imgsz=1280, verbose=False, stream=True, device=0, classes=[0])
+            results = model.predict(source=img_source, conf=0.35, imgsz=1280, verbose=False, stream=True, device=0, classes=[0])
             
             with open(res_file_path, 'w') as f:
                 for result in results:
@@ -3027,7 +1379,7 @@ def run_evaluation():
     # --- CONFIGURAZIONE PATH ---
     # GT_FOLDER deve puntare alla cartella che CONTIENE le sequenze (SNMOT-XXX)
     gt_folder_abs = DATASET_TR23_TEST 
-    trackers_folder_abs = DETECTOR_OUTPUT_DIR 
+    trackers_folder_abs = TRACKER_OUTPUT_DIR 
     seqmap_folder_abs = SEQMAP_DIR 
     
     print(f"Cercando GT in: {gt_folder_abs}") 
@@ -3276,6 +1628,277 @@ def run_evaluation():
 
 if __name__ == "__main__":
     run_evaluation()
+
+
+================================================
+FILE: src/Tracker/visualize_result.py
+================================================
+import cv2
+import os
+import sys
+import numpy as np
+from pathlib import Path
+from tqdm import tqdm
+
+# --- SETUP PATH per importare config ---
+current_file = Path(__file__).resolve()
+project_root = current_file.parent.parent.parent
+sys.path.append(str(project_root))
+
+from config import *
+
+def visualize_tracking():
+    # --- CONFIGURAZIONE VISIVA ---
+    # BGR format (Blue, Green, Red)
+    # Magenta/Fucsia Ã¨ ottimo contro il verde
+    BOX_COLOR = (255, 0, 255) 
+    TEXT_COLOR = (255, 0, 255)
+    THICKNESS = 2
+    FONT_SCALE = 0.6
+    
+    # --- CONFIGURAZIONE CARTELLE ---
+    
+    # Cerchiamo la cartella corretta in TRACKER_OUTPUT_DIR
+    # Se non sei sicuro del nome, questo snippet prende l'ultima modificata
+    all_subdirs = [d for d in TRACKER_OUTPUT_DIR.iterdir() if d.is_dir()]
+    if not all_subdirs:
+        print("Nessuna cartella risultati trovata in output.")
+        return
+    
+    # Ordina per ultima modifica (cosÃ¬ prende l'ultimo run fatto)
+    latest_subdir = max(all_subdirs, key=os.path.getmtime)
+    print(f"UserÃ² i risultati dalla cartella: {latest_subdir.name}")
+    
+    trackers_folder = latest_subdir
+    
+    # 2. Cartella dove salvare i video
+    video_output_dir = OUTPUT_DIR / "visualization_videos"
+    video_output_dir.mkdir(parents=True, exist_ok=True)
+
+    # 3. Cartella delle immagini originali
+    base_data_path = DATASET_TR23_TEST
+
+    # Ottieni lista sequenze dai risultati txt
+    txt_files = sorted(list(trackers_folder.glob("*.txt")))
+    
+    if not txt_files:
+        print(f"Nessun file .txt trovato in {trackers_folder}")
+        return
+
+    print(f"Trovate {len(txt_files)} sequenze da visualizzare.")
+
+    for txt_file in txt_files:
+        seq_name = txt_file.stem # es. "SNMOT-060"
+        print(f"\n--> Generazione video per: {seq_name}")
+        
+        # Percorso immagini originali
+        img_dir = base_data_path / seq_name / "img1"
+        if not img_dir.exists():
+            print(f"ATTENZIONE: Immagini non trovate per {seq_name}. Salto.")
+            continue
+            
+        # Carica le detection/tracking dal txt
+        # Formato MOT: frame, id, x, y, w, h, ...
+        # Creiamo un dizionario: frame_id -> lista di [id, x, y, w, h]
+        tracks = {}
+        with open(txt_file, 'r') as f:
+            for line in f:
+                parts = line.strip().split(',')
+                if len(parts) < 6: continue
+                
+                frame_idx = int(parts[0])
+                obj_id = int(parts[1])
+                x = float(parts[2])
+                y = float(parts[3])
+                w = float(parts[4])
+                h = float(parts[5])
+                
+                if frame_idx not in tracks:
+                    tracks[frame_idx] = []
+                tracks[frame_idx].append((obj_id, x, y, w, h))
+
+        # Lista immagini
+        img_files = sorted([f for f in img_dir.glob("*.jpg")])
+        if not img_files:
+            continue
+
+        # Setup Video Writer
+        # Leggiamo la prima immagine per le dimensioni
+        first_img = cv2.imread(str(img_files[0]))
+        height, width, _ = first_img.shape
+        
+        save_path = video_output_dir / f"{seq_name}.mp4"
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v') # Codec mp4
+        out = cv2.VideoWriter(str(save_path), fourcc, 25.0, (width, height)) # 25 FPS standard
+
+        for img_path in tqdm(img_files, desc="Rendering frames"):
+            frame_id = int(img_path.stem) # es 00001 -> 1
+            
+            frame = cv2.imread(str(img_path))
+            
+            # Se ci sono detection per questo frame, disegnale
+            if frame_id in tracks:
+                for (obj_id, x, y, w, h) in tracks[frame_id]:
+                    # Coordinate intere per OpenCV
+                    x1 = int(x)
+                    y1 = int(y)
+                    x2 = int(x + w)
+                    y2 = int(y + h)
+                    
+                    # 1. Disegna Box Sottile
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), BOX_COLOR, THICKNESS)
+                    
+                    # 2. Testo ID (Sopra il box)
+                    label = f"{obj_id}"
+                    
+                    # Calcola dimensione testo per posizionarlo bene
+                    (text_w, text_h), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, FONT_SCALE, 1)
+                    
+                    # Posizione testo: appena sopra il box
+                    text_x = x1
+                    text_y = max(y1 - 5, text_h + 5) # Evita di uscire dall'immagine in alto
+                    
+                    # Disegna solo il testo (senza sfondo per pulizia, come richiesto)
+                    # Usiamo lo stesso colore del box per coerenza
+                    cv2.putText(frame, label, (text_x, text_y), 
+                                cv2.FONT_HERSHEY_SIMPLEX, FONT_SCALE, TEXT_COLOR, THICKNESS)
+
+            out.write(frame)
+
+        out.release()
+        print(f"Video salvato in: {save_path}")
+
+    print("\nVisualizzazione completata!")
+
+if __name__ == "__main__":
+    visualize_tracking()
+
+
+================================================
+FILE: src/Tracker/Yolo12m/inference.py
+================================================
+import os
+import sys
+import shutil
+from ultralytics import YOLO
+from pathlib import Path
+
+# Setup path per importare config
+current_file = Path(__file__).resolve()
+project_root = current_file.parent.parent.parent.parent
+sys.path.append(str(project_root))
+
+from config import *
+from src.utils.get_best_device import get_best_device
+
+def run_tracking_and_save_txt():
+    # --- CONFIGURAZIONE ---
+    CONF_THRES = 0.35  # La tua soglia magica che ti dÃ  0.90 DetA
+    IOU_THRES = 0.7    # Default sicuro per non perdere giocatori sovrapposti
+    # ----------------------
+
+    DEVICE = get_best_device()
+    model_name = 'best.pt'
+    
+    # Percorso del modello (assicurati che sia corretto)
+    weights_path = MODEL_PATH / "training_runs" / "soccernet_high_precision" / "weights" / model_name
+    
+    print(f"Caricamento modello: {weights_path}")
+    print(f"Device: {DEVICE}")
+    
+    model = YOLO(weights_path)
+    model.to(DEVICE)
+
+    base_path = DATASET_TR23_TEST
+    # Cartella output distinta per non confondersi
+    output_folder = DETECTOR_OUTPUT_DIR / f"{model_name.split('.')[0]}_tracker_results"
+    
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    else:
+        # Pulizia automatica se la cartella esiste
+        for filename in os.listdir(output_folder):
+            file_path = os.path.join(output_folder, filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+            except Exception as e:
+                print(f"Errore pulizia: {e}")
+
+    if not os.path.exists(base_path):
+        print(f"Errore: Percorso {base_path} non trovato.")
+        return
+
+    sequences = os.listdir(base_path)
+
+    for seq_name in sequences:
+        seq_path = os.path.join(base_path, seq_name)
+        img_source = os.path.join(seq_path, 'img1')
+
+        if os.path.isdir(seq_path) and os.path.exists(img_source):
+            print(f"--> Tracking sequenza: {seq_name}")
+            
+            res_file_path = os.path.join(output_folder, f"{seq_name}.txt")
+            
+            # --- MODIFICA CRUCIALE: model.track con persist=True ---
+            # tracker="bytetrack.yaml" Ã¨ ottimo per sport (gestisce bene le occlusioni)
+            # tracker="botsort.yaml" Ã¨ l'alternativa se bytetrack fallisce
+            results = model.track(
+                source=img_source,
+                conf=CONF_THRES,
+                iou=IOU_THRES,
+                imgsz=1280,
+                device=0,
+                classes=[0],
+                tracker="bytetrack.yaml", 
+                persist=True,  # FONDAMENTALE: Mantiene l'ID tra i frame
+                verbose=False,
+                stream=True
+            )
+            
+            with open(res_file_path, 'w') as f:
+                for result in results:
+                    path = result.path
+                    frame_id = int(os.path.basename(path).split('.')[0])
+                    
+                    # Se non rileva nulla, result.boxes Ã¨ vuoto
+                    if result.boxes is None:
+                        continue
+
+                    boxes = result.boxes.cpu().numpy()
+                    
+                    # Iteriamo sui box trovati
+                    for i, box in enumerate(boxes):
+                        # Coordinate (x1, y1, x2, y2)
+                        x1, y1, x2, y2 = box.xyxy[0]
+                        w = x2 - x1
+                        h = y2 - y1
+                        conf = box.conf[0]
+                        cls = box.cls[0]
+                        
+                        # --- ESTRAZIONE ID ---
+                        # Se il tracker ha assegnato un ID, lo usiamo.
+                        # Se il box Ã¨ appena apparso e non ha ancora ID, id sarÃ  None (o 0 in alcuni casi rari)
+                        if box.id is not None:
+                            track_id = int(box.id[0])
+                        else:
+                            # Fallback: se per assurdo non ha ID, mettiamo -1 (Detection pura)
+                            track_id = -1
+
+                        if int(cls) == 0: 
+                            # Formato MOT: frame, ID, x, y, w, h, conf, -1, -1, -1
+                            # Qui usiamo track_id invece di -1 fisso!
+                            line = f"{frame_id},{track_id},{x1:.2f},{y1:.2f},{w:.2f},{h:.2f},{conf:.4f},-1,1,-1\n"
+                            f.write(line)
+            
+            print(f"Salvati risultati in: {res_file_path}")
+
+            # Aggiornamento seqmap (Opzionale se giÃ  esiste)
+            # with open(SEQMAP_FILE, 'a') as seqmap_file:
+            #     seqmap_file.write(f"{seq_name}\n")
+
+if __name__ == "__main__":
+    run_tracking_and_save_txt()
 
 
 ================================================
