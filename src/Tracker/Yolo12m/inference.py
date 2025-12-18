@@ -14,7 +14,7 @@ from src.utils.get_best_device import get_best_device
 def run_optimized_tracking():
     # --- CONFIGURAZIONE ---
     # Usa il path assoluto o relativo corretto al file yaml appena creato
-    CONF_THRES = 0.35
+    CONF_THRES = 0.1
     MAX_ENTITIES = 28  # Il filtro "closed set" che abbiamo discusso
     # ----------------------
 

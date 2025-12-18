@@ -46,7 +46,8 @@ Directory structure:
         ├── Tracker/
         │   ├── visualize_result.py
         │   └── Yolo12m/
-        │       └── inference.py
+        │       ├── inference.py
+        │       └── soccer_tracker.yaml
         └── utils/
             ├── __init__.py
             └── get_best_device.py
@@ -76,7 +77,7 @@ TRACKER_OUTPUT_DIR = OUTPUT_DIR / "tracker_results"
 SEQMAP_DIR = OUTPUT_DIR / "seqmap"
 SEQMAP_FILE = SEQMAP_DIR / "soccer_test.txt"
 
-
+TRACKER_CONFIG = ROOT_DIR / "src" / "Tracker" / "Yolo12m" 
 
 
 ================================================
@@ -1471,6 +1472,23 @@ def run_evaluation():
         print(f"DetRe (Recall): {det_re:.2f}%")
         print(f"DetPr (Precision): {det_pr:.2f}%")
 
+        for metric in stats.keys():
+            value = stats[metric]
+            
+            # Controlla se il valore Ã¨ indicizzabile (un array/lista)
+            if hasattr(value, "__getitem__") and not isinstance(value, (str, bytes)):
+                # Se idx=0 corrisponde a IoU 0.5, usa 0. 
+                # Se sei sicuro che sia l'indice 9, tieni 9.
+                try:
+                    print(f"{metric}: {value[0]}") 
+                except IndexError:
+                    print(f"{metric}: {value}") # Se l'array Ã¨ piÃ¹ corto di quanto previsto
+            else:
+                # Se Ã¨ uno scalare (come HOTA(0)), lo stampa direttamente
+                print(f"{metric}: {value}")
+            
+        
+
 if __name__ == "__main__":
     run_evaluation()
 
@@ -1779,11 +1797,10 @@ FILE: src/Tracker/Yolo12m/inference.py
 ================================================
 import os
 import sys
-import shutil
 from ultralytics import YOLO
 from pathlib import Path
 
-# Setup path per importare config
+# Setup path
 current_file = Path(__file__).resolve()
 project_root = current_file.parent.parent.parent.parent
 sys.path.append(str(project_root))
@@ -1791,45 +1808,29 @@ sys.path.append(str(project_root))
 from config import *
 from src.utils.get_best_device import get_best_device
 
-def run_tracking_and_save_txt():
+def run_optimized_tracking():
     # --- CONFIGURAZIONE ---
-    CONF_THRES = 0.35  # La tua soglia magica che ti dÃ  0.90 DetA
-    IOU_THRES = 0.7    # Default sicuro per non perdere giocatori sovrapposti
+    # Usa il path assoluto o relativo corretto al file yaml appena creato
+    CONF_THRES = 0.35
+    MAX_ENTITIES = 28  # Il filtro "closed set" che abbiamo discusso
     # ----------------------
 
     DEVICE = get_best_device()
     model_name = 'best.pt'
-    
-    # Percorso del modello (assicurati che sia corretto)
     weights_path = MODEL_PATH / "training_runs" / "soccernet_high_precision" / "weights" / model_name
     
     print(f"Caricamento modello: {weights_path}")
-    print(f"Device: {DEVICE}")
+    print(f"Configurazione Tracker Custom: {TRACKER_CONFIG}")
     
     model = YOLO(weights_path)
     model.to(DEVICE)
 
-    base_path = DATASET_TR23_TEST
-    # Cartella output distinta per non confondersi
-    output_folder = DETECTOR_OUTPUT_DIR / f"{model_name.split('.')[0]}_tracker_results"
-    
+    output_folder = TRACKER_OUTPUT_DIR / f"{model_name.split('.')[0]}_optimized_tracking"
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
-    else:
-        # Pulizia automatica se la cartella esiste
-        for filename in os.listdir(output_folder):
-            file_path = os.path.join(output_folder, filename)
-            try:
-                if os.path.isfile(file_path) or os.path.islink(file_path):
-                    os.unlink(file_path)
-            except Exception as e:
-                print(f"Errore pulizia: {e}")
 
-    if not os.path.exists(base_path):
-        print(f"Errore: Percorso {base_path} non trovato.")
-        return
-
-    sequences = os.listdir(base_path)
+    base_path = DATASET_TR23_TEST
+    sequences = sorted(os.listdir(base_path))
 
     for seq_name in sequences:
         seq_path = os.path.join(base_path, seq_name)
@@ -1837,68 +1838,76 @@ def run_tracking_and_save_txt():
 
         if os.path.isdir(seq_path) and os.path.exists(img_source):
             print(f"--> Tracking sequenza: {seq_name}")
-            
             res_file_path = os.path.join(output_folder, f"{seq_name}.txt")
             
-            # --- MODIFICA CRUCIALE: model.track con persist=True ---
-            # tracker="bytetrack.yaml" Ã¨ ottimo per sport (gestisce bene le occlusioni)
-            # tracker="botsort.yaml" Ã¨ l'alternativa se bytetrack fallisce
+            # Reset del modello per pulire la memoria della GPU/Tracker tra sequenze
+            model = YOLO(weights_path)
+            model.to(DEVICE)
+
             results = model.track(
                 source=img_source,
                 conf=CONF_THRES,
-                iou=IOU_THRES,
+                iou=0.6,
                 imgsz=1280,
                 device=0,
                 classes=[0],
-                tracker="bytetrack.yaml", 
-                persist=True,  # FONDAMENTALE: Mantiene l'ID tra i frame
+                tracker=str(TRACKER_CONFIG / "soccer_tracker.yaml"), # <--- QUI CARICHIAMO LA TUA CONFIGURAZIONE
+                persist=True,
                 verbose=False,
                 stream=True
             )
             
             with open(res_file_path, 'w') as f:
                 for result in results:
-                    path = result.path
-                    frame_id = int(os.path.basename(path).split('.')[0])
+                    if result.boxes is None: continue
                     
-                    # Se non rileva nulla, result.boxes Ã¨ vuoto
-                    if result.boxes is None:
-                        continue
-
+                    frame_id = int(os.path.basename(result.path).split('.')[0])
                     boxes = result.boxes.cpu().numpy()
                     
-                    # Iteriamo sui box trovati
-                    for i, box in enumerate(boxes):
-                        # Coordinate (x1, y1, x2, y2)
+                    # --- Raccolta e Filtro Top-K (Closed Set Real-time) ---
+                    valid_candidates = []
+                    
+                    for box in boxes:
+                        # Se il box non ha ID (perso dal tracker), lo scartiamo o mettiamo -1
+                        if box.id is None: continue
+                        
+                        track_id = int(box.id[0])
                         x1, y1, x2, y2 = box.xyxy[0]
                         w = x2 - x1
                         h = y2 - y1
                         conf = box.conf[0]
-                        cls = box.cls[0]
                         
-                        # --- ESTRAZIONE ID ---
-                        # Se il tracker ha assegnato un ID, lo usiamo.
-                        # Se il box Ã¨ appena apparso e non ha ancora ID, id sarÃ  None (o 0 in alcuni casi rari)
-                        if box.id is not None:
-                            track_id = int(box.id[0])
-                        else:
-                            # Fallback: se per assurdo non ha ID, mettiamo -1 (Detection pura)
-                            track_id = -1
+                        # Filtro geometrico (cartelloni bassi e larghi)
+                        if (w / h) > 1.3: continue
+                        
+                        valid_candidates.append({
+                            'line': f"{frame_id},{track_id},{x1:.2f},{y1:.2f},{w:.2f},{h:.2f},{conf:.4f},-1,1,-1\n",
+                            'conf': conf
+                        })
+                    
+                    # Ordina per confidenza e tieni solo i top 24 (22 giocatori + arbitri)
+                    valid_candidates.sort(key=lambda x: x['conf'], reverse=True)
+                    final_candidates = valid_candidates[:MAX_ENTITIES]
+                    
+                    for cand in final_candidates:
+                        f.write(cand['line'])
 
-                        if int(cls) == 0: 
-                            # Formato MOT: frame, ID, x, y, w, h, conf, -1, -1, -1
-                            # Qui usiamo track_id invece di -1 fisso!
-                            line = f"{frame_id},{track_id},{x1:.2f},{y1:.2f},{w:.2f},{h:.2f},{conf:.4f},-1,1,-1\n"
-                            f.write(line)
-            
-            print(f"Salvati risultati in: {res_file_path}")
-
-            # Aggiornamento seqmap (Opzionale se giÃ  esiste)
-            # with open(SEQMAP_FILE, 'a') as seqmap_file:
-            #     seqmap_file.write(f"{seq_name}\n")
+            print(f"Salvati: {res_file_path}")
 
 if __name__ == "__main__":
-    run_tracking_and_save_txt()
+    run_optimized_tracking()
+
+
+================================================
+FILE: src/Tracker/Yolo12m/soccer_tracker.yaml
+================================================
+tracker_type: bytetrack  # Usiamo ByteTrack
+track_high_thresh: 0.5   # Soglia per la prima associazione (box sicuri)
+track_low_thresh: 0.1    # Soglia bassa: recupera detection deboli
+new_track_thresh: 0.6    # Confidenza alta per inizializzare nuove track
+track_buffer: 60         # 60 frame di memoria per le occlusioni (ottimo per il calcio)
+match_thresh: 0.8        # Soglia sovrapposizione
+fuse_score: True         # <--- RIGA AGGIUNTA: Obbligatoria per il fix
 
 
 ================================================
