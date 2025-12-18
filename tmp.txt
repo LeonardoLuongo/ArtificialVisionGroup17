@@ -1,0 +1,23 @@
+----------------------------------------
+RISULTATI SPECIFICI PER SOGLIA IoU = 0.5, conf=0.35 (best)
+----------------------------------------
+DetA @ 0.5 (Detection Accuracy):  89.84%
+DetRe @ 0.5 (Recall):             93.29%
+DetPr @ 0.5 (Precision):          96.04%
+----------------------------------------
+Metriche di Tracking (saranno basse se hai resettato gli ID):
+AssA @ 0.5 (Association Acc):     0.21%
+HOTA @ 0.5:                       4.34%
+----------------------------------------
+
+----------------------------------------
+RISULTATI SPECIFICI PER SOGLIA IoU = 0.5, conf=0.35, agnostic_nms=True (best)
+----------------------------------------
+DetA @ 0.5 (Detection Accuracy):  89.84%
+DetRe @ 0.5 (Recall):             93.29%
+DetPr @ 0.5 (Precision):          96.04%
+----------------------------------------
+Metriche di Tracking (saranno basse se hai resettato gli ID):
+AssA @ 0.5 (Association Acc):     0.21%
+HOTA @ 0.5:                       4.34%
+----------------------------------------
