@@ -1,0 +1,7 @@
+tracker_type: bytetrack  # Usiamo ByteTrack
+track_high_thresh: 0.5   # Soglia per la prima associazione (box sicuri)
+track_low_thresh: 0.1    # Soglia bassa: recupera detection deboli
+new_track_thresh: 0.6    # Confidenza alta per inizializzare nuove track
+track_buffer: 60         # 60 frame di memoria per le occlusioni (ottimo per il calcio)
+match_thresh: 0.8        # Soglia sovrapposizione
+fuse_score: True         # <--- RIGA AGGIUNTA: Obbligatoria per il fix

@@ -20,3 +20,4 @@ TRACKER_OUTPUT_DIR = OUTPUT_DIR / "tracker_results"
 SEQMAP_DIR = OUTPUT_DIR / "seqmap"
 SEQMAP_FILE = SEQMAP_DIR / "soccer_test.txt"
 
+TRACKER_CONFIG = ROOT_DIR / "src" / "Tracker" / "Yolo12m" 

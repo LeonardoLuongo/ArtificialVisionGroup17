@@ -101,9 +101,22 @@ def run_evaluation():
         det_pr = stats['DetPr'][idx] * 100
         print(f"DetRe (Recall): {det_re:.2f}%")
         print(f"DetPr (Precision): {det_pr:.2f}%")
-        
+
         for metric in stats.keys():
-            print(f"{metric}: {stats[metric][idx]}")
+            value = stats[metric]
+            
+            # Controlla se il valore è indicizzabile (un array/lista)
+            if hasattr(value, "__getitem__") and not isinstance(value, (str, bytes)):
+                # Se idx=0 corrisponde a IoU 0.5, usa 0. 
+                # Se sei sicuro che sia l'indice 9, tieni 9.
+                try:
+                    print(f"{metric}: {value[0]}") 
+                except IndexError:
+                    print(f"{metric}: {value}") # Se l'array è più corto di quanto previsto
+            else:
+                # Se è uno scalare (come HOTA(0)), lo stampa direttamente
+                print(f"{metric}: {value}")
+            
         
 
 if __name__ == "__main__":
