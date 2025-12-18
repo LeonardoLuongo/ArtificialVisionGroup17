@@ -31,8 +31,8 @@ def train_yolo_tuned():
     results = model.train(
         data=str(dataset_yaml),
         epochs=50,
-        imgsz=1280,
-        batch=4,
+        imgsz=1024,
+        batch=8,
         
         # --- TUNING DEI PESI DELLA LOSS (Il tuo tocco magico) ---
         box=7.5,    # (Default): Allows slightly looser boxes, increases recall

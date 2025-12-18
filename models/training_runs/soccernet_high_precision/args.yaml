@@ -5,8 +5,8 @@ data: C:\Users\leona\Documents\AV_Project\ArtificialVisionGroup17\dataset\tracki
 epochs: 50
 time: null
 patience: 100
-batch: 4
-imgsz: 1280
+batch: 8
+imgsz: 1024
 save: true
 save_period: -1
 cache: false
