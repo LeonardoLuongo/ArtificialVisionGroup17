@@ -51,9 +51,10 @@ def run_optimized_tracking():
                 device=DEVICE,
                 per_class=True,
                 det_thresh=CONF_THRES,
-                max_age=60,       # track_buffer
+                max_age=180,       # track_buffer
                 min_hits=3,       # frame minimi per confermare
-                iou_threshold=0.3 # match_thresh
+                iou_threshold=0.3, # match_thresh
+                delta_t=10
             )
 
             # Prendiamo la lista dei frame
