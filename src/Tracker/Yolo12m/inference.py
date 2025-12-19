@@ -54,7 +54,7 @@ def run_optimized_tracking():
                 imgsz=1280,
                 device=0,
                 classes=[0],
-                tracker=str(TRACKER_CONFIG / "oc-sort.yaml"), # <--- QUI CARICHIAMO LA TUA CONFIGURAZIONE
+                tracker=str(TRACKER_CONFIG / "botsort.yaml"), # <--- QUI CARICHIAMO LA TUA CONFIGURAZIONE
                 persist=True,
                 verbose=False,
                 stream=True

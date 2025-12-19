@@ -1,6 +1,7 @@
 Directory structure:
 └── ArtificialVisionGroup17/
     ├── config.py
+    ├── mio_codice.txt
     ├── conda/
     │   ├── build_run.bat
     │   ├── build_run.sh
@@ -22,6 +23,10 @@ Directory structure:
     │       └── soccernet_high_precision/
     │           ├── args.yaml
     │           └── results.csv
+    ├── SIMULATOR/
+    │   └── SIMULATOR/
+    │       ├── evaluation_helper.py
+    │       └── simulator.py
     └── src/
         ├── Dataset/
         │   ├── clean_gt.py
@@ -79,6 +84,12 @@ SEQMAP_DIR = OUTPUT_DIR / "seqmap"
 SEQMAP_FILE = SEQMAP_DIR / "soccer_test.txt"
 
 TRACKER_CONFIG = ROOT_DIR / "src" / "Tracker" / "Yolo12m" 
+
+
+================================================
+FILE: mio_codice.txt
+================================================
+[Binary file]
 
 
 ================================================
@@ -412,6 +423,707 @@ epoch,time,train/box_loss,train/cls_loss,train/dfl_loss,metrics/precision(B),met
 49,21030.6,1.11139,1.4796,0.99196,0.96444,0.93941,0.97655,0.64586,1.22468,1.5829,1.02631,2.48e-05,2.48e-05,2.48e-05
 50,21455.5,1.11158,1.4961,0.99229,0.96402,0.94005,0.97696,0.64517,1.2252,1.57847,1.02707,1.49e-05,1.49e-05,1.49e-05
 
+
+
+================================================
+FILE: SIMULATOR/SIMULATOR/evaluation_helper.py
+================================================
+import os, shutil, glob
+from pathlib import Path
+import cv2
+import trackeval
+from typing import Dict, Tuple, List
+import numpy as np
+
+def natural_key(path: str) -> int:
+    """Extracts numeric frame index from a file path for natural sorting."""
+    name = os.path.basename(path)
+    return int(name.split(".")[0])
+
+def _read_behavior(path: str) -> Dict[Tuple[int, int], int]:
+    out: Dict[Tuple[int, int], int] = {} # (frame, region_id) -> n_people
+    import csv
+    with open(path, "r", newline="") as f:
+        reader = csv.reader(f)
+        for row in reader:
+            if not row or len(row) < 3:
+                continue
+            fr = int(row[0])
+            rid = int(row[1])
+            n = int(float(row[2]))
+            out[(fr, rid)] = n
+    return out
+
+def compute_nmae_from_behavior_files(dataset_root: str, predictions_root: str, group: str) -> dict:
+    """
+    Computes MAE and nMAE globally over all videos and both ROI ids
+    using files:
+      GT:   <video>/gt/behavior_gt.txt
+      Pred: <predictions_root>/behavior_<video>_<group>.txt
+
+    Missing prediction entries are treated as 0, like your old code.
+    """
+    # reuse your existing _read_behavior(path) which returns {(frame, roi): count}
+    abs_err_sum = 0.0
+    n = 0
+    has_all = True
+
+    video_ids = [d for d in os.listdir(dataset_root) if os.path.isdir(os.path.join(dataset_root, d)) and d.isdigit()] # get all the video ids
+    video_ids.sort(key=lambda s: int(s)) # sort numerically
+
+    for vid in video_ids:
+        gt_path = os.path.join(dataset_root, vid, "gt", "behavior_gt.txt")
+        pr_path = os.path.join(predictions_root, f"behavior_{vid}_{group}.txt")
+
+        if not (os.path.isfile(gt_path) and os.path.isfile(pr_path)):
+            has_all = False
+            continue
+
+        # map (frame, region_id) -> n_people
+        gt_b = _read_behavior(gt_path)
+        pr_b = _read_behavior(pr_path)
+
+        # Evaluate only where GT has an entry (same as your old codeâ€™s logic)
+        for key, gt_val in gt_b.items(): # for each (frame, region_id) in GT
+            pred_val = pr_b.get(key, 0) # select prediction associated to that key, default to 0 if missing
+            abs_err_sum += abs(pred_val - gt_val) # accumulate absolute error
+            n += 1
+
+    if not has_all or n == 0: # if any video missing or no entries to evaluate
+        return {"has_behavior": False, "MAE": None, "nMAE": None}
+
+    mae = abs_err_sum / n
+    nmae = (10.0 - min(10.0, max(0.0, mae))) / 10.0 # normalize MAE to [0,1] range as per metric definition
+    return {"has_behavior": True, "MAE": mae, "nMAE": nmae}
+
+
+# ============================================================
+# Build TrackEval temp folders in MOTChallenge2DBox layout
+# ============================================================
+
+
+def ensure_10col_and_force_class1(src_txt: str, dst_txt: str) -> None:
+    """
+    Writes a MOT 10-column file:
+      frame,id,x,y,w,h,conf,class,vis,unused
+    Forces class=1 to be compatible with TrackEval's pedestrian-class evaluation.
+    """
+    Path(dst_txt).parent.mkdir(parents=True, exist_ok=True)
+    out_lines: List[str] = []
+
+    with open(src_txt, "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            parts = [p.strip() for p in line.split(",")]
+            if len(parts) < 6:
+                continue
+
+            frame = parts[0]
+            tid   = parts[1]
+            x, y, w, h = parts[2:6]
+
+            conf = parts[6] if len(parts) >= 7 else "1"
+            cls  = "1"  # force pedestrian
+            vis  = parts[8] if len(parts) >= 9 else "-1"
+            z    = parts[9] if len(parts) >= 10 else "-1"
+
+            out_lines.append(",".join([frame, tid, x, y, w, h, conf, cls, vis, z]))
+
+    with open(dst_txt, "w") as f:
+        f.write("\n".join(out_lines) + ("\n" if out_lines else ""))
+
+def write_seqinfo_ini(seq_dir: str, seq_name: str, fps: float, img_w: int, img_h: int, seq_len: int) -> None:
+    """
+    Minimal seqinfo.ini for TrackEval MotChallenge2DBox, used also to compute SoccerNet Challenge metrics.
+    it is used to give info about frame size, fps, length, etc. to TrackEval.
+    it will write a seqinfo.ini file in seq_dir.
+    """
+    content = "\n".join([
+        "[Sequence]",
+        f"name={seq_name}",
+        "imDir=img1",
+        f"frameRate={int(round(fps))}",
+        f"seqLength={int(seq_len)}",
+        f"imWidth={int(img_w)}",
+        f"imHeight={int(img_h)}",
+        "imExt=.jpg",
+        ""
+    ])
+    with open(os.path.join(seq_dir, "seqinfo.ini"), "w") as f:
+        f.write(content)
+
+
+def list_video_ids(dataset_root: str) -> List[str]:
+    vids = []
+    for name in os.listdir(dataset_root):
+        p = os.path.join(dataset_root, name)
+        if os.path.isdir(p) and name.isdigit():
+            vids.append(name)
+    return sorted(vids, key=lambda s: int(s))
+
+
+
+# ============================================================
+# TrackEval call: compute only HOTA@alpha=0.50
+# ============================================================
+def build_trackeval_structure(
+    dataset_root: str,
+    predictions_root: str,
+    group: str,
+    split: str,
+    fps: float,
+    tmp_root: str,
+    benchmark: str = "SNMOT",
+    tracker_name: str = "test",
+) -> Tuple[str, str, str]:
+    """
+    Creates:
+      tmp_root/
+        gt/<BENCHMARK>-<SPLIT>/<SEQ>/gt/gt.txt
+        gt/<BENCHMARK>-<SPLIT>/<SEQ>/seqinfo.ini
+        trackers/<BENCHMARK>-<SPLIT>/<TRACKER>/data/<SEQ>.txt
+        seqmaps/<BENCHMARK>-<SPLIT>.txt
+    Returns:
+      (gt_folder, trackers_folder, seqmap_file)
+    """
+    tmp_root = os.path.abspath(tmp_root) # make sure it's absolute
+    if os.path.exists(tmp_root): # clean up in case it already exists
+        shutil.rmtree(tmp_root)
+    os.makedirs(tmp_root, exist_ok=True) # create base temp folder with proper format to compute metrics using TrackEval
+
+    gt_folder = os.path.join(tmp_root, "gt") # will contain the ground-truth and images info in TrackEval format
+    tr_folder = os.path.join(tmp_root, "trackers") # will contain the tracker predictions in TrackEval format
+    sm_folder = os.path.join(tmp_root, "seqmaps") # will contain the series of sequences that we will evaluate
+    os.makedirs(gt_folder, exist_ok=True)
+    os.makedirs(tr_folder, exist_ok=True)
+    os.makedirs(sm_folder, exist_ok=True)
+
+    bench_split = f"{benchmark}-{split}"
+    gt_bs = os.path.join(gt_folder, bench_split)
+    tr_bs = os.path.join(tr_folder, bench_split, tracker_name, "data")
+    os.makedirs(gt_bs, exist_ok=True)
+    os.makedirs(tr_bs, exist_ok=True)
+
+    seqs = list_video_ids(dataset_root) # list of numeric folder names in dataset_root
+    if not seqs:
+        raise FileNotFoundError(f"No numeric video folders found in: {dataset_root}")
+
+    for seq in seqs: # iterate over each numeric video folder
+        src_seq = os.path.join(dataset_root, seq) # source sequence folder, e.g., #dataset_root/1
+        src_img1 = os.path.join(src_seq, "img1") # source images folder, e.g., #dataset_root/1/img1
+        src_gt = os.path.join(src_seq, "gt", "gt.txt") # source GT file, e.g., #dataset_root/1/gt/gt.txt
+        src_pred = os.path.join(predictions_root, f"tracking_{seq}_{group}.txt") # source prediction file, e.g., #predictions_root/tracking_1_01.txt
+
+        # check existence of required files
+        if not os.path.isfile(src_gt): 
+            raise FileNotFoundError(f"Missing GT gt.txt: {src_gt}")
+        if not os.path.isfile(src_pred):
+            raise FileNotFoundError(f"Missing prediction file: {src_pred}")
+
+        frame_paths = sorted(glob.glob(os.path.join(src_img1, "*.jpg")), key=natural_key) # get all frames ordered by frame index
+        if not frame_paths: # error in case no frames found
+            raise FileNotFoundError(f"No frames in: {src_img1}")
+
+        im0 = cv2.imread(frame_paths[0]) # read first frame to get dimensions, assuming all frames have same size
+        if im0 is None:
+            raise RuntimeError(f"Could not read: {frame_paths[0]}")
+        H, W = im0.shape[:2] # get height and width
+        seq_len = len(frame_paths) # number of frames in the sequence
+
+        # Destination GT sequence folder
+        dst_seq = os.path.join(gt_bs, seq)
+        os.makedirs(dst_seq, exist_ok=True)
+        os.makedirs(os.path.join(dst_seq, "gt"), exist_ok=True)
+        os.makedirs(os.path.join(dst_seq, "img1"), exist_ok=True)  # can be empty; TrackEval uses seqinfo
+
+        write_seqinfo_ini(dst_seq, seq_name=seq, fps=fps, img_w=W, img_h=H, seq_len=seq_len) # write seqinfo.ini file used by TrackEval
+
+        # it rewrite the GT and prediction file in 10-column format to ensure compatibility, class forced to 1 (pedestrian)
+        ensure_10col_and_force_class1(src_gt, os.path.join(dst_seq, "gt", "gt.txt")) 
+        ensure_10col_and_force_class1(src_pred, os.path.join(tr_bs, f"{seq}.txt"))
+
+    # Seqmap file (TrackEval expects first line header; then one seq=video per line) it is used to tell TrackEval which sequences to evaluate
+    seqmap_file = os.path.join(sm_folder, f"{bench_split}.txt")
+    with open(seqmap_file, "w") as f:
+        f.write("name\n")
+        for seq in seqs:
+            f.write(f"{seq}\n")
+
+    return gt_folder, tr_folder, seqmap_file
+
+
+def compute_hota_at_05_trackeval(
+    gt_folder: str,
+    trackers_folder: str,
+    seqmap_file: str,
+    split: str,
+    benchmark: str = "SNMOT",
+    tracker_name: str = "test",
+) -> float:
+    """
+    Runs TrackEval MotChallenge2DBox with only HOTA metric family,
+    then extracts HOTA at alpha=0.50 (not averaged over alphas).
+    """
+    # --- configs (no argparse; direct dicts) ---
+    eval_config = trackeval.Evaluator.get_default_eval_config() # get default eval config, as done in SoccerNet Challenge
+    eval_config["DISPLAY_LESS_PROGRESS"] = True # show less progress otherwise too verbose, set to False to see full progress
+
+    dataset_config = trackeval.datasets.MotChallenge2DBox.get_default_dataset_config() # get default dataset config for MotChallenge2DBox, as done in SoccerNet Challenge
+    dataset_config.update({
+        "BENCHMARK": benchmark,
+        "GT_FOLDER": gt_folder,
+        "TRACKERS_FOLDER": trackers_folder,
+        "TRACKERS_TO_EVAL": [tracker_name],
+        "SPLIT_TO_EVAL": split,
+        "SEQMAP_FILE": seqmap_file,
+        "DO_PREPROC": False,          # matches SoccerNet wrapper style
+        "TRACKER_SUB_FOLDER": "data",
+        "OUTPUT_SUB_FOLDER": "eval_results",
+    }) # update with our specific paths and settings
+
+    metrics_config = {"METRICS": ["HOTA"]} # only HOTA metric needed for the Challenge
+
+    evaluator = trackeval.Evaluator(eval_config) # create evaluator with eval config
+    dataset_list = [trackeval.datasets.MotChallenge2DBox(dataset_config)] # create dataset list with our dataset config
+    metrics_list = [trackeval.metrics.HOTA(metrics_config)] # create metrics list with HOTA metric
+
+    output_res, _ = evaluator.evaluate(dataset_list, metrics_list) # run official evaluation 
+
+    # Find alpha index for 0.50 from the metric itself
+    hota_metric = trackeval.metrics.HOTA(metrics_config) # create a HOTA curve metrics for an array of alphas
+    alphas = np.array(hota_metric.array_labels, dtype=float) # get array of alphas used in HOTA curve
+    idx = int(np.where(np.isclose(alphas, 0.5))[0][0]) # find index of alpha=0.50 
+
+    # SoccerNet-style extraction uses COMBINED_SEQ and class key "pedestrian"
+    hota_curve = output_res["MotChallenge2DBox"][tracker_name]["COMBINED_SEQ"]["pedestrian"]["HOTA"]["HOTA"] # from the output results, get HOTA curve for combined sequences and pedestrian class 
+    return float(hota_curve[idx]) # return HOTA@0.50 value as float
+
+
+
+================================================
+FILE: SIMULATOR/SIMULATOR/simulator.py
+================================================
+import os
+import glob
+import json
+import shutil
+from collections import defaultdict
+from typing import Dict, List, Tuple, Optional
+import csv
+
+import cv2
+import numpy as np
+# ---- NumPy 2.x compatibility for TrackEval (older code uses deprecated aliases) ----
+if not hasattr(np, "float"):
+    np.float = float
+if not hasattr(np, "int"):
+    np.int = int
+if not hasattr(np, "bool"):
+    np.bool = bool
+
+from evaluation_helper import compute_nmae_from_behavior_files, compute_hota_at_05_trackeval, build_trackeval_structure, list_video_ids, natural_key
+
+# ============================================================
+# IO helpers for MOT-style tracking text files (10 columns)
+# ============================================================
+
+def read_behavior_per_frame(path: str) -> Dict[int, Dict[int, int]]:
+    """
+    Reads behavior file lines: frame, roi_id, count
+    Returns: frame -> {roi_id: count}
+    """
+    per_frame: Dict[int, Dict[int, int]] = defaultdict(dict)
+
+    with open(path, "r", newline="") as f:
+        reader = csv.reader(f)
+        for row in reader:
+            if not row or len(row) < 3:
+                continue
+            fr = int(row[0])
+            rid = int(row[1])
+            n = int(float(row[2]))
+            per_frame[fr][rid] = n
+    return dict(per_frame)
+
+def read_mot_txt_per_frame(txt_path: str) -> Dict[int, List[Tuple[int, int, int, int, int]]]:
+    """
+    Reads a MOT-style txt (CSV):
+      frame, id, x, y, w, h, conf, class, vis, ...
+    Returns per_frame dict:
+      frame -> [(id, x, y, w, h), ...]
+    """
+    per_frame = defaultdict(list)
+    with open(txt_path, "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            parts = [p.strip() for p in line.split(",")]
+            if len(parts) < 6:
+                continue
+            fr = int(float(parts[0]))
+            oid = int(float(parts[1]))
+            x = int(float(parts[2]))
+            y = int(float(parts[3]))
+            w = int(float(parts[4]))
+            h = int(float(parts[5]))
+            per_frame[fr].append((oid, x, y, w, h))
+    return dict(per_frame)
+
+
+# ============================================================
+# ROI + drawing helpers (optional; uses your roi.json format)
+# ============================================================
+
+def draw_roi_counts(
+    img,
+    rois: dict,
+    roi_colors: dict,
+    counts_for_frame: Dict[int, int],
+    roi_ids: Tuple[int, int] = (1, 2),
+):
+    H, W = img.shape[:2]
+    roi_names = sorted(rois.keys())
+
+    for k, roi_name in enumerate(roi_names[:len(roi_ids)]):
+        rid = roi_ids[k]
+        val = int(counts_for_frame.get(rid, 0))
+
+        r = rois[roi_name]
+        x1, y1, x2, y2 = roi_pixel_rect(r, W, H)
+        x1, y1, x2, y2 = clip_rect(x1, y1, x2, y2, W, H)
+
+        # place text inside ROI (top-left with padding)
+        tx = x1 + 10
+        ty = y1 + 70
+
+        color = roi_colors.get(roi_name, (255, 255, 255))
+
+        # bigger number
+        cv2.putText(
+            img,
+            str(val),
+            (tx, ty),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            2.5,   # font scale (bigger)
+            color,
+            6,     # thickness (bolder)
+            cv2.LINE_AA,
+        )
+
+def load_rois(roi_json_path: str) -> dict:
+    with open(roi_json_path, "r") as f:
+        return json.load(f)
+
+
+def roi_pixel_rect(roi_norm: dict, img_w: int, img_h: int) -> Tuple[int, int, int, int]:
+    x1 = int(round(roi_norm["x"] * img_w))
+    y1 = int(round(roi_norm["y"] * img_h))
+    rw = int(round(roi_norm["width"] * img_w))
+    rh = int(round(roi_norm["height"] * img_h))
+    return x1, y1, x1 + rw, y1 + rh
+
+
+def clip_rect(x1: int, y1: int, x2: int, y2: int, w: int, h: int) -> Tuple[int, int, int, int]:
+    x1 = max(0, min(w - 1, x1))
+    y1 = max(0, min(h - 1, y1))
+    x2 = max(0, min(w - 1, x2))
+    y2 = max(0, min(h - 1, y2))
+    return x1, y1, x2, y2
+
+
+def draw_rois(img, rois: dict, roi_colors: Optional[dict] = None):
+    roi_colors = roi_colors or {}
+    H, W = img.shape[:2]
+    for name, r in rois.items():
+        x1, y1, x2, y2 = roi_pixel_rect(r, W, H)
+        x1, y1, x2, y2 = clip_rect(x1, y1, x2, y2, W, H)
+        color = roi_colors.get(name, (0, 255, 0))
+        cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
+        cv2.putText(img, name, (x1, max(0, y1 - 8)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2, cv2.LINE_AA)
+
+
+def draw_boxes_with_ids(img, items, color=(0, 255, 255), draw_ids=True):
+    H, W = img.shape[:2]
+    for (obj_id, x, y, bw, bh) in items:
+        x1, y1, x2, y2 = clip_rect(x, y, x + bw, y + bh, W, H)
+        cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
+        if draw_ids:
+            cv2.putText(img, str(obj_id), (x1, max(0, y1 - 6)),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2, cv2.LINE_AA)
+
+def bbox_base_center(x: int, y: int, w: int, h: int) -> Tuple[int, int]:
+    # base-center = (center_x, bottom_y)
+    return int(round(x + w / 2.0)), int(round(y + h))
+
+def point_in_rect(px: int, py: int, rect: Tuple[int, int, int, int]) -> bool:
+    x1, y1, x2, y2 = rect
+    return (x1 <= px <= x2) and (y1 <= py <= y2)
+
+def draw_boxes_roi_colored(
+    img,
+    items,
+    rois: dict,
+    roi_colors: dict,
+    out_color=(0, 255, 255),   # yellow in BGR
+    draw_ids=True
+):
+    """
+    Boxes inside an ROI (base-center point in ROI) take the ROI color.
+    Boxes outside all ROIs are yellow (out_color).
+    """
+    H, W = img.shape[:2]
+    roi_rects = [(name, roi_pixel_rect(r, W, H)) for name, r in rois.items()]
+
+    for (obj_id, x, y, bw, bh) in items:
+        cx, cy = bbox_base_center(x, y, bw, bh)
+
+        roi_name = None
+        for name, rect in roi_rects: # for this logic if a box is inside multiple rois, it takes the first one found roi name and color
+            if point_in_rect(cx, cy, rect):
+                roi_name = name
+                break
+
+        color = roi_colors.get(roi_name, out_color) if roi_name else out_color
+
+        x1, y1, x2, y2 = clip_rect(x, y, x + bw, y + bh, W, H)
+        cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
+        cv2.circle(img, (max(0, min(W - 1, cx)), max(0, min(H - 1, cy))), 3, color, -1)
+        if draw_ids:
+            cv2.putText(img, str(obj_id), (x1, max(0, y1 - 6)),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2, cv2.LINE_AA)
+
+
+# ============================================================
+# Interactive simulation viewer + final TrackEval HOTA@0.50
+# ============================================================
+
+def simulate_and_eval_hota05(
+    dataset_root: str,
+    predictions_root: str,
+    group: str,
+    fps: float = 25.0,
+    split: str = "test",
+    window_name: str = "GT (left) | PRED (right)",
+    tmp_root: str = "./_tmp_trackeval_soccernet",
+    show_window: bool = True,
+):
+    video_ids = list_video_ids(dataset_root)
+    if not video_ids:
+        raise FileNotFoundError(f"No numbered video folders found in: {dataset_root}")
+
+    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+
+    if show_window:
+        ###################################################
+        ########## Interactive simulation viewer ##########
+        ###################################################
+        for vid in video_ids:
+            vid_dir = os.path.join(dataset_root, vid)
+            frames_folder = os.path.join(vid_dir, "img1")
+            gt_track_path = os.path.join(vid_dir, "gt", "gt.txt")
+            roi_json_path = os.path.join(vid_dir, "roi.json")  # optional
+            pred_track_path = os.path.join(predictions_root, f"tracking_{vid}_{group}.txt")
+
+            gt_beh_path = os.path.join(vid_dir, "gt", "behavior_gt.txt")
+            pr_beh_path = os.path.join(predictions_root, f"behavior_{vid}_{group}.txt")
+
+            # create a structure that maps each frame each roi to the count of objects in that roi
+            gt_beh = read_behavior_per_frame(gt_beh_path) if os.path.isfile(gt_beh_path) else {} # gt
+            pr_beh = read_behavior_per_frame(pr_beh_path) if os.path.isfile(pr_beh_path) else {} # pred
+
+            if not os.path.isfile(gt_track_path):
+                raise FileNotFoundError(f"Missing GT gt.txt for video {vid}: {gt_track_path}")
+            if not os.path.isfile(pred_track_path):
+                raise FileNotFoundError(f"Missing prediction tracking for video {vid}: {pred_track_path}")
+
+            rois = load_rois(roi_json_path) if os.path.isfile(roi_json_path) else None
+            roi_colors = {}
+            if rois is not None:
+                # pick 2 rois deterministically: first = blue, second = red
+                roi_names = sorted(rois.keys()) # rois.keys() = dict_keys(['roi1', 'roi2'])
+                if len(roi_names) >= 1: # roi 1 = blue
+                    roi_colors[roi_names[0]] = (255, 0, 0)   # blue (BGR)
+                if len(roi_names) >= 2: # roi 2 = red
+                    roi_colors[roi_names[1]] = (0, 0, 255)   # red (BGR)
+
+            # map frame id -> [(onj id, x, y, w, h), ...]
+            gt_per_frame = read_mot_txt_per_frame(gt_track_path) #gt
+            pred_per_frame = read_mot_txt_per_frame(pred_track_path) #pred
+
+            frame_paths = sorted(glob.glob(os.path.join(frames_folder, "*.jpg")), key=natural_key)
+            if not frame_paths:
+                raise FileNotFoundError(f"No jpg frames found for video {vid}: {frames_folder}")
+
+            delay_ms = max(1, int(round(1000.0 / max(1e-6, fps)))) # number of milliseconds between frames to match fps (ms to wait between frames)
+            paused = False
+            i = 0
+
+            while True:
+                if not paused:
+                    if i >= len(frame_paths): # end of video
+                        break
+
+                    frame = cv2.imread(frame_paths[i]) # read actual frame
+                    if frame is None: # case of read error
+                        i += 1
+                        continue
+
+                    frame_idx = i + 1  # starting from 1 
+
+                    gt_list = gt_per_frame.get(frame_idx, []) # read the GT boxes for this frame
+                    pr_list = pred_per_frame.get(frame_idx, []) # read the PRED boxes for this frame
+
+                    left = frame.copy() # GT stream on left
+                    right = frame.copy() # PRED stream on right
+
+                    # --- Behavior overlay (GT left, Pred right) ---
+                    gt_counts = gt_beh.get(frame_idx, {}) # read the  dict of roi_id -> count for this frame
+                    pr_counts = pr_beh.get(frame_idx, {}) # read the  dict of roi_id -> count for this frame
+
+                    # assuming roi ids are 1 and 2
+                    gt_r1 = gt_counts.get(1, 0) # number of objects in roi 1 GT
+                    gt_r2 = gt_counts.get(2, 0) # number of objects in roi 2 GT
+                    pr_r1 = pr_counts.get(1, 0) # number of objects in roi 1 PRED
+                    pr_r2 = pr_counts.get(2, 0) # number of objects in roi 2 PRED
+
+                    gt_total = gt_r1 + gt_r2 # total number of objects GT in the rois
+                    pr_total = pr_r1 + pr_r2 # total number of objects PRED in the rois
+
+                    # draw total counts at bottom-left
+                    cv2.putText(left,  f"TOTAL: {gt_total}", (10, left.shape[0]-20),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255,255,255), 2, cv2.LINE_AA)
+                    cv2.putText(right, f"TOTAL: {pr_total}", (10, right.shape[0]-20),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255,255,255), 2, cv2.LINE_AA)
+
+                    # --- Draw ROIs, counts, boxes ---
+                    if rois is not None:
+                        # draw ROIs
+                        draw_rois(left, rois, roi_colors)
+                        draw_rois(right, rois, roi_colors)
+
+                        # draw counts per roi at top-left read from behavior files
+                        draw_roi_counts(left,  rois, roi_colors, gt_counts, roi_ids=(1, 2))
+                        draw_roi_counts(right, rois, roi_colors, pr_counts, roi_ids=(1, 2))
+
+                        # understand between all boxes which are inside which roi, and color roi colored boxes inside the roi and yellow those outside all rois
+                        draw_boxes_roi_colored(left, gt_list, rois, roi_colors, out_color=(0, 255, 255), draw_ids=True)
+                        draw_boxes_roi_colored(right, pr_list, rois, roi_colors, out_color=(0, 255, 255), draw_ids=True)
+                    else:
+                        # no ROI -> everything yellow
+                        draw_boxes_with_ids(left, gt_list, color=(0, 255, 255), draw_ids=True)
+                        draw_boxes_with_ids(right, pr_list, color=(0, 255, 255), draw_ids=True)
+
+                    # frame info overlay
+                    cv2.putText(left, f"GT | video {vid} | {group} | frame {frame_idx}/{len(frame_paths)}",
+                                (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2, cv2.LINE_AA)
+                    cv2.putText(right, f"PRED | video {vid} | {group} | frame {frame_idx}/{len(frame_paths)}",
+                                (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2, cv2.LINE_AA)
+
+                    combined = cv2.hconcat([left, right]) # concatenate left and right images
+                    cv2.line(combined, (left.shape[1], 0), (left.shape[1], combined.shape[0] - 1),
+                            (255, 255, 255), 2) # vertical line in the middle
+
+                    cv2.imshow(window_name, combined) # show the combined image
+                    i += 1
+
+                key = cv2.waitKey(delay_ms) & 0xFF # wait for key press with delay matching fps
+                if key in (ord("q"), 27): # 'q' or 'Esc' to quit
+                    cv2.destroyAllWindows()
+                    return
+                if key == ord(" "): # space to pause/play
+                    paused = not paused
+                if key == ord("n"): # 'n' for next video
+                    break
+
+            # End-of-video pause
+            print(f"Finished video {vid}. Press 'n' for next, or 'q'/'Esc' to quit.")
+            while True:
+                key = cv2.waitKey(0) & 0xFF # wait indefinitely for key press
+                if key in (ord("q"), 27): # 'q' or 'Esc' to quit
+                    cv2.destroyAllWindows()
+                    return
+                if key == ord("n"): # 'n' for next video
+                    break
+
+        cv2.destroyAllWindows()
+        ###################################################
+        ###################################################
+        ###################################################
+
+    
+    ##################################################
+    ###### metrics computation with TrackEval ########
+    ##################################################
+
+    # --- TrackEval HOTA@0.50 on the whole dataset (official computation) ---
+
+    # prepare TrackEval folder structure
+    gt_folder, tr_folder, seqmap_file = build_trackeval_structure(
+        dataset_root=dataset_root,
+        predictions_root=predictions_root,
+        group=group,
+        split=split,
+        fps=fps,
+        tmp_root=tmp_root,
+        benchmark="SNMOT",
+        tracker_name="test",
+    )
+
+    # compute HOTA@0.50 using TrackEval
+    hota_05 = compute_hota_at_05_trackeval(
+        gt_folder=gt_folder,
+        trackers_folder=tr_folder,
+        seqmap_file=seqmap_file,
+        split=split,
+        benchmark="SNMOT",
+        tracker_name="test",
+    )
+
+    shutil.rmtree(os.path.abspath(tmp_root), ignore_errors=True)
+    print(f"\n=== TrackEval (SoccerNet-style) HOTA@0.50 ===\nHOTA@0.50: {hota_05:.6f}")
+
+    print("\n--- Checking behavior files ---")
+    missing = 0
+    for vid in list_video_ids(dataset_root):
+        gt_b = os.path.join(dataset_root, vid, "gt", "behavior_gt.txt")
+        pr_b = os.path.join(predictions_root, f"behavior_{vid}_{group}.txt")
+        if not os.path.isfile(gt_b):
+            print("MISSING GT behavior:", gt_b)
+            missing += 1
+        if not os.path.isfile(pr_b):
+            print("MISSING PRED behavior:", pr_b)
+            missing += 1
+    print("Missing count:", missing)
+
+    # --- Behavior metric (nMAE) ---
+    beh = compute_nmae_from_behavior_files(
+        dataset_root=dataset_root,
+        predictions_root=predictions_root,
+        group=group,
+    )
+
+    if beh.get("has_behavior", True) is False or beh.get("nMAE", None) is None:
+        print("Behavior missing -> nMAE not computed (PTBS = HOTA@0.50)")
+        print(f"PTBS: {hota_05:.6f}")
+    else:
+        print(f"MAE:  {beh['MAE']:.6f}")
+        print(f"nMAE: {beh['nMAE']:.6f}")
+        print(f"PTBS: {(hota_05 + beh['nMAE']):.6f}")
+
+
+if __name__ == "__main__":
+    simulate_and_eval_hota05(
+        dataset_root="lecture_example_from_training/test_set/videos",
+        predictions_root="lecture_example_from_training/Predictions_folder",
+        group="01",
+        fps=200.0,
+        split="test",
+        show_window=True,
+    )
 
 
 ================================================
@@ -1903,26 +2615,20 @@ if __name__ == "__main__":
 ================================================
 FILE: src/Tracker/Yolo12m/botsort.yaml
 ================================================
-# FILE: src/Tracker/Yolo12m/soccer_tracker.yaml
-
-tracker_type: botsort  # Cambiato da bytetrack
-track_high_thresh: 0.5 
+tracker_type: botsort
+track_high_thresh: 0.5
 track_low_thresh: 0.1
 new_track_thresh: 0.6
-track_buffer: 120       # Aumentato per gestire meglio le sparizioni temporanee
-match_thresh: 0.7      # Leggermente abbassato per essere piÃ¹ flessibile nei movimenti rapidi
-
-# --- CAMERA MOTION COMPENSATION (GMC) ---
-gmc_method: sparseOptFlow # Metodo consigliato per il calcio (bilancia velocitÃ  e precisione)
-# Altre opzioni: 
-# 'orb' (veloce ma meno preciso), 
-# 'ecc' (molto preciso ma molto lento), 
-# 'none' (disattiva la compensazione)
-
-# --- BoTSORT SPECIFIC PARAMS ---
+track_buffer: 120
+match_thresh: 0.7
+# --- RE-IDENTIFICATION ---
+with_reid: True
+model_name: osnet_x0_25
 proximity_thresh: 0.5
 appearance_thresh: 0.25
-with_reid: False       # Lasciamo False per ora: i calciatori sono troppo 
+# --- CAMERA MOTION ---
+gmc_method: ecc
+# --- BoTSORT SPECIFIC ---
 fuse_score: True
 
 
@@ -1985,7 +2691,7 @@ def run_optimized_tracking():
                 imgsz=1280,
                 device=0,
                 classes=[0],
-                tracker=str(TRACKER_CONFIG / "oc-sort.yaml"), # <--- QUI CARICHIAMO LA TUA CONFIGURAZIONE
+                tracker=str(TRACKER_CONFIG / "botsort.yaml"), # <--- QUI CARICHIAMO LA TUA CONFIGURAZIONE
                 persist=True,
                 verbose=False,
                 stream=True
@@ -2041,9 +2747,9 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 from pathlib import Path
-from boxmot import OcSort  # <--- Libreria esterna per OC-SORT
+from boxmot import BoostTrack  # Utilizzo di BoostTrack per massimizzare AssA
 
-# Setup path
+# Setup path (mantenendo la tua struttura)
 current_file = Path(__file__).resolve()
 project_root = current_file.parent.parent.parent.parent
 sys.path.append(str(project_root))
@@ -2051,25 +2757,21 @@ sys.path.append(str(project_root))
 from config import *
 from src.utils.get_best_device import get_best_device
 
-def run_optimized_tracking():
-    # --- CONFIGURAZIONE ---
-    CONF_THRES = 0.35
-    MAX_ENTITIES = 28  
-    # ----------------------
-
+def run_boosttrack_soccer():
+    # --- CONFIGURAZIONE OTTIMIZZATA PER ASSA ---
+    CONF_THRES = 0.40      # Soglia leggermente piÃ¹ alta per pulire la DetA [cite: 80]
+    MAX_ENTITIES = 28      # Limite giocatori/arbitri [cite: 18]
+    REID_MODEL = 'osnet_x1_0_market1501.pt' # Re-ID necessario per re-identificare 
+    
     DEVICE = get_best_device()
-    model_name = 'best.pt'
-    weights_path = MODEL_PATH / "training_runs" / "soccernet_high_precision" / "weights" / model_name
+    print(f"Utilizzo dispositivo: {DEVICE}")
+    weights_path = MODEL_PATH / "training_runs" / "soccernet_high_precision" / "weights" / "best.pt"
     
-    print(f"Caricamento modello: {weights_path}")
-    
-    # Inizializziamo il modello YOLO (solo per detection)
     model = YOLO(weights_path)
     model.to(DEVICE)
 
-    output_folder = TRACKER_OUTPUT_DIR / "ocsort_results"
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
+    output_folder = TRACKER_OUTPUT_DIR / "boosttrack_results"
+    os.makedirs(output_folder, exist_ok=True)
 
     base_path = DATASET_TR23_TEST
     sequences = sorted(os.listdir(base_path))
@@ -2079,66 +2781,68 @@ def run_optimized_tracking():
         img_source = os.path.join(seq_path, 'img1')
 
         if os.path.isdir(seq_path) and os.path.exists(img_source):
-            print(f"--> Tracking sequenza (OC-SORT): {seq_name}")
-            res_file_path = os.path.join(output_folder, f"{seq_name}.txt")
+            print(f"--> Tracking con BoostTrack: {seq_name}")
             
-            # Inizializza OC-SORT per ogni sequenza (per resettare gli ID)
-            tracker = OcSort(
-                model_weights=None, # Non usiamo ReID basato su modelli esterni qui
+            # Formato file richiesto: tracking_K_XX.txt [cite: 59]
+            # Assumendo XX come team '01'
+            res_file_path = os.path.join(output_folder, f"tracking_{seq_name}_01.txt")
+            
+            # Inizializza BoostTrack
+            # Fondamentale per AssA: calibrazione GMC e Re-ID [cite: 71, 81]
+            tracker = BoostTrack(
+                model_weights=Path(REID_MODEL),
                 device=DEVICE,
-                per_class=True,
+                fp16=True,
                 det_thresh=CONF_THRES,
-                max_age=60,       # track_buffer
-                min_hits=3,       # frame minimi per confermare
-                iou_threshold=0.3 # match_thresh
+                max_age=150,        # Gestisce sparizioni temporanee dovute a pan della camera 
+                min_hits=3,
+                iou_threshold=0.3,  # Soglia per associazione spaziale
+                match_thresh=0.8,   # Soglia per Re-ID (apparenza)
+                gmc_method='ecc',   # Indispensabile per Moving Camera 
+                lambda_m=0.5,       # Peso del movimento nell'associazione
+                lambda_a=0.5,       # Peso dell'apparenza (Re-ID)
+                use_dfl=True        # Deep Feature Learner per migliorare l'associazione
             )
 
-            # Prendiamo la lista dei frame
             frame_files = sorted([f for f in os.listdir(img_source) if f.endswith(('.jpg', '.png'))])
 
             with open(res_file_path, 'w') as f:
                 for img_file in frame_files:
                     frame_path = os.path.join(img_source, img_file)
-                    frame_id = int(img_file.split('.')[0])
+                    # frame_id deve partire da 1 [cite: 62]
+                    frame_id = int(''.join(filter(str.isdigit, img_file)))
                     
-                    # 1. Detection pura (senza .track)
                     img = cv2.imread(frame_path)
-                    results = model.predict(img, conf=CONF_THRES, iou=0.6, imgsz=1280, device=DEVICE, classes=[0], verbose=False)
-                    
-                    # Prepara le detezioni per OC-SORT: [x1, y1, x2, y2, conf, class]
+                    # Risoluzione 1280 per mantenere dettagli dei giocatori a 1080p [cite: 22]
+                    results = model.predict(img, conf=CONF_THRES, iou=0.5, imgsz=1280, device=DEVICE, classes=[0], verbose=False)
                     dets = results[0].boxes.data.cpu().numpy()
                     
-                    # 2. Update manuale del Tracker OC-SORT
-                    # Il tracker ritorna: [x1, y1, x2, y2, id, conf, class, ind]
+                    # Update BoostTrack
                     tracks = tracker.update(dets, img)
                     
                     valid_candidates = []
-                    
                     for track in tracks:
                         x1, y1, x2, y2, track_id, conf, cls, ind = track
+                        w, h = x2 - x1, y2 - y1
                         
-                        w = x2 - x1
-                        h = y2 - y1
-                        
-                        # Filtro geometrico (cartelloni bassi e larghi) [cite: 18, 20]
-                        if (w / h) > 1.3: continue
+                        # Filtro giocatori: evita cartelloni orizzontali scambiati per persone
+                        if (w / h) > 0.9: continue
                         
                         valid_candidates.append({
-                            'line': f"{frame_id},{int(track_id)},{x1:.2f},{y1:.2f},{w:.2f},{h:.2f},{conf:.4f},-1,1,-1\n",
+                            # Formato richiesto: frame_id,object_id,top_left_x,top_left_y,width,height 
+                            'line': f"{frame_id},{int(track_id)},{x1:.2f},{y1:.2f},{w:.2f},{h:.2f}\n",
                             'conf': conf
                         })
                     
-                    # Ordina per confidenza e tieni i Top-K richiesti [cite: 18, 22]
+                    # Seleziona i migliori candidati fino al limite MAX_ENTITIES
                     valid_candidates.sort(key=lambda x: x['conf'], reverse=True)
-                    final_candidates = valid_candidates[:MAX_ENTITIES]
-                    
-                    for cand in final_candidates:
+                    for cand in valid_candidates[:MAX_ENTITIES]:
                         f.write(cand['line'])
 
             print(f"Salvati: {res_file_path}")
 
 if __name__ == "__main__":
-    run_optimized_tracking()
+    run_boosttrack_soccer()
 
 
 ================================================
