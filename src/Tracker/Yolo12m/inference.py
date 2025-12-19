@@ -11,32 +11,24 @@ sys.path.append(str(project_root))
 from config import *
 from src.utils.get_best_device import get_best_device
 
-def run_decoupled_tracking():
-    # --- PARAMETRI CRITICI ---
-    # 1. Cosa vede il tracker (MOLTO BASSO per permettere a ByteTrack di lavorare)
-    CONF_THRES_INPUT = 0.10  
-    
-    # 2. Cosa scriviamo nel file (ALTO per avere Precisione 99%)
-    CONF_THRES_OUTPUT = 0.35 
-    
-    # 3. Quante entità massime (Closed Set)
-    MAX_ENTITIES = 26 
-    # -------------------------
+def run_optimized_tracking():
+    # --- CONFIGURAZIONE ---
+    # Usa il path assoluto o relativo corretto al file yaml appena creato
+    CONF_THRES = 0.35
+    MAX_ENTITIES = 28  # Il filtro "closed set" che abbiamo discusso
+    # ----------------------
 
     DEVICE = get_best_device()
     model_name = 'best.pt'
     weights_path = MODEL_PATH / "training_runs" / "soccernet_high_precision" / "weights" / model_name
     
-    # Percorso config tracker
-    tracker_config_path = project_root / "src" / "Tracker" / "Yolo12m" / "soccer_tracker.yaml"
-
     print(f"Caricamento modello: {weights_path}")
-    print(f"Tracker Config: {tracker_config_path}")
+    print(f"Configurazione Tracker Custom: {TRACKER_CONFIG}")
     
     model = YOLO(weights_path)
     model.to(DEVICE)
 
-    output_folder = TRACKER_OUTPUT_DIR / f"{model_name.split('.')[0]}_decoupled"
+    output_folder = TRACKER_OUTPUT_DIR / f"botsort_results"
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
@@ -48,22 +40,21 @@ def run_decoupled_tracking():
         img_source = os.path.join(seq_path, 'img1')
 
         if os.path.isdir(seq_path) and os.path.exists(img_source):
-            print(f"--> Tracking: {seq_name} (In: {CONF_THRES_INPUT}, Out: {CONF_THRES_OUTPUT})")
+            print(f"--> Tracking sequenza: {seq_name}")
             res_file_path = os.path.join(output_folder, f"{seq_name}.txt")
             
-            # Reset modello
+            # Reset del modello per pulire la memoria della GPU/Tracker tra sequenze
             model = YOLO(weights_path)
             model.to(DEVICE)
 
-            # INFERENZA: Passiamo confidenza bassa per alimentare il secondo stadio di ByteTrack
             results = model.track(
                 source=img_source,
-                conf=CONF_THRES_INPUT, # <--- QUI STA IL TRUCCO
+                conf=CONF_THRES,
                 iou=0.6,
-                imgsz=1980,
+                imgsz=1280,
                 device=0,
                 classes=[0],
-                tracker=str(tracker_config_path),
+                tracker=str(TRACKER_CONFIG / "bot_sort.yaml"), # <--- QUI CARICHIAMO LA TUA CONFIGURAZIONE
                 persist=True,
                 verbose=False,
                 stream=True
@@ -76,26 +67,20 @@ def run_decoupled_tracking():
                     frame_id = int(os.path.basename(result.path).split('.')[0])
                     boxes = result.boxes.cpu().numpy()
                     
+                    # --- Raccolta e Filtro Top-K (Closed Set Real-time) ---
                     valid_candidates = []
                     
                     for box in boxes:
-                        if box.id is None: continue # Box non associati
+                        # Se il box non ha ID (perso dal tracker), lo scartiamo o mettiamo -1
+                        if box.id is None: continue
                         
                         track_id = int(box.id[0])
-                        conf = box.conf[0]
-                        
-                        # --- FILTRO OUTPUT ---
-                        # Qui scartiamo i box deboli.
-                        # MA: il tracker li ha usati per calcolare la posizione!
-                        # Se il box è sotto soglia, non lo scriviamo, ma l'ID è salvo nel tracker.
-                        if conf < CONF_THRES_OUTPUT:
-                            continue
-
                         x1, y1, x2, y2 = box.xyxy[0]
                         w = x2 - x1
                         h = y2 - y1
+                        conf = box.conf[0]
                         
-                        # Filtro Aspect Ratio
+                        # Filtro geometrico (cartelloni bassi e larghi)
                         if (w / h) > 1.3: continue
                         
                         valid_candidates.append({
@@ -103,7 +88,7 @@ def run_decoupled_tracking():
                             'conf': conf
                         })
                     
-                    # Filtro Closed Set (Top-K)
+                    # Ordina per confidenza e tieni solo i top 24 (22 giocatori + arbitri)
                     valid_candidates.sort(key=lambda x: x['conf'], reverse=True)
                     final_candidates = valid_candidates[:MAX_ENTITIES]
                     
@@ -113,4 +98,4 @@ def run_decoupled_tracking():
             print(f"Salvati: {res_file_path}")
 
 if __name__ == "__main__":
-    run_decoupled_tracking()
+    run_optimized_tracking()
