@@ -1,0 +1,18 @@
+tracker_type: ocsort
+track_high_thresh: 0.5  # Soglia per rilevamenti affidabili
+track_low_thresh: 0.1   # Per recuperare i giocatori durante le occlusioni
+new_track_thresh: 0.6   # Soglia per creare un nuovo ID
+track_buffer: 60        # Frame da mantenere (circa 2 secondi a 30fps)
+match_thresh: 0.3       # Soglia di distanza per l'associazione
+
+# --- GLOBAL MOTION COMPENSATION (GMC) ---
+# Fondamentale per la "moving camera" del contest 
+gmc_method: sparseOptFlow # Bilancia velocità e precisione nel calcio
+# soflow è un'ottima alternativa se usi librerie come BoxMOT
+
+# --- OC-SORT SPECIFIC PARAMS ---
+delta_t: 3              # Intervallo per la stima della velocità (inerzia)
+inertia: 0.2            # Peso della direzione precedente
+min_hits: 3             # Frame minimi per confermare una traccia
+iou_threshold: 0.3      # Soglia IoU per l'associazione
+fuse_score: True        

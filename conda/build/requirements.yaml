@@ -19,6 +19,7 @@ dependencies:
     - ultralytics           # For YOLO (Detection/Tracking)
     - supervision           # Helpful utils for visualization and counting
     - scikit-learn
+    - boxmot
     
     # SAM 3 (Segment Anything Model 3)
     # Installing directly from source as it is very new
