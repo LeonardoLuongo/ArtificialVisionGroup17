@@ -31,7 +31,7 @@ def train_yolo_tuned():
     results = model.train(
         data=str(dataset_yaml),
         epochs=50,
-        imgsz=1024,
+        imgsz=1280,
         batch=8,
         
         # --- TUNING DEI PESI DELLA LOSS (Il tuo tocco magico) ---
@@ -49,11 +49,11 @@ def train_yolo_tuned():
         freeze=10,  # Congeliamo il backbone per stabilità
         
         project=str(MODEL_PATH / "training_runs"),
-        name='soccernet_high_precision',
+        name='soccernet_high_precision_frame3',
         exist_ok=True,
         plots=True,
         device=0,
-        workers=4
+        workers=8
     )
     print("Training completato.")
     
