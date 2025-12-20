@@ -9,6 +9,10 @@ dependencies:
   - pytorch>=2.3.1
   - torchvision>=0.18.1
   - pytorch-cuda=12.1
+  - torchreid
+  - gdown 
+  - tensorboard
+  - Cython
   - numpy<2.0
   - pandas
   - opencv

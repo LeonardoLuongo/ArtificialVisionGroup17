@@ -1,14 +1,20 @@
-# Crea un nuovo file: src/Tracker/Yolo12m/soccernet_optimized.yaml
-tracker_type: botsort  # BoT-SORT è più stabile di BoostTrack per scene complesse
-track_high_thresh: 0.45  # Abbassato per includere più giocatori
+
+tracker_type: botsort  # Cambiato da bytetrack
+track_high_thresh: 0.5 
 track_low_thresh: 0.1
-new_track_thresh: 0.55
-track_buffer: 90  # Aumentato per gestire le occlusioni
-match_thresh: 0.8
-with_reid: True
-model: auto   
-proximity_thresh: 0.4  # Abbassato per associazioni più aggressive
-appearance_thresh: 0.2
-gmc_method: sparseOptFlow  # Più preciso per camera in movimento
+new_track_thresh: 0.6
+track_buffer: 90       # Aumentato per gestire meglio le sparizioni temporanee
+match_thresh: 0.7      # Leggermente abbassato per essere più flessibile nei movimenti rapidi
+
+# --- CAMERA MOTION COMPENSATION (GMC) ---
+gmc_method: sparseOptFlow # Metodo consigliato per il calcio (bilancia velocità e precisione)
+# Altre opzioni: 
+# 'orb' (veloce ma meno preciso), 
+# 'ecc' (molto preciso ma molto lento), 
+# 'none' (disattiva la compensazione)
+
+# --- BoTSORT SPECIFIC PARAMS ---
+proximity_thresh: 0.5
+appearance_thresh: 0.25
+with_reid: False       # Lasciamo False per ora: i calciatori sono troppo 
 fuse_score: True
-lambda: 0.98  # Filtro di Kalman più conservativo

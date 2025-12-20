@@ -2,6 +2,7 @@ import os
 import sys
 from ultralytics import YOLO
 from pathlib import Path
+import numpy as np
 
 # Setup path
 current_file = Path(__file__).resolve()
@@ -13,9 +14,9 @@ from src.utils.get_best_device import get_best_device
 
 def run_optimized_tracking():
     # --- CONFIGURAZIONE ---
-    # Usa il path assoluto o relativo corretto al file yaml appena creato
     CONF_THRES = 0.35
-    MAX_ENTITIES = 28  # Il filtro "closed set" che abbiamo discusso
+    MAX_ENTITIES = 28 
+    MAX_PREDICTION_FRAMES = 15 # Frame per cui continuare a predire il movimento
     # ----------------------
 
     DEVICE = get_best_device()
@@ -23,14 +24,11 @@ def run_optimized_tracking():
     weights_path = MODEL_PATH / "training_runs" / "soccernet_high_precision" / "weights" / model_name
     
     print(f"Caricamento modello: {weights_path}")
-    print(f"Configurazione Tracker Custom: {TRACKER_CONFIG}")
-    
     model = YOLO(weights_path)
     model.to(DEVICE)
 
     output_folder = TRACKER_OUTPUT_DIR / f"botsort_results"
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
+    os.makedirs(output_folder, exist_ok=True)
 
     base_path = DATASET_TR23_TEST
     sequences = sorted(os.listdir(base_path))
@@ -40,60 +38,91 @@ def run_optimized_tracking():
         img_source = os.path.join(seq_path, 'img1')
 
         if os.path.isdir(seq_path) and os.path.exists(img_source):
-            print(f"--> Tracking sequenza: {seq_name}")
+            print(f"--> Tracking con Predizione Lineare: {seq_name}")
             res_file_path = os.path.join(output_folder, f"{seq_name}.txt")
             
-            # Reset del modello per pulire la memoria della GPU/Tracker tra sequenze
             model = YOLO(weights_path)
             model.to(DEVICE)
+            
+            # Storia avanzata: { id: {'box': [x,y,w,h], 'velocity': [dx,dy,dw,dh], 'lost': 0} }
+            track_history = {}
 
             results = model.track(
-                source=img_source,
-                conf=CONF_THRES,
-                iou=0.6,
-                imgsz=1280,
-                device=0,
-                classes=[0],
-                tracker=str(TRACKER_CONFIG / "botsort.yaml"), # <--- QUI CARICHIAMO LA TUA CONFIGURAZIONE
-                persist=True,
-                verbose=False,
-                stream=True
+                source=img_source, conf=CONF_THRES, iou=0.6, imgsz=1280,
+                device=0, classes=[0], tracker=str(TRACKER_CONFIG / "botsort.yaml"),
+                persist=True, verbose=False, stream=True
             )
             
             with open(res_file_path, 'w') as f:
                 for result in results:
-                    if result.boxes is None: continue
-                    
                     frame_id = int(os.path.basename(result.path).split('.')[0])
-                    boxes = result.boxes.cpu().numpy()
+                    active_this_frame = []
+                    current_frame_ids = set()
+
+                    if result.boxes is not None and result.boxes.id is not None:
+                        boxes = result.boxes.cpu().numpy()
+                        for box in boxes:
+                            if box.id is None: continue
+                            
+                            tid = int(box.id[0])
+                            x1, y1, x2, y2 = box.xyxy[0]
+                            w, h = x2 - x1, y2 - y1
+                            curr_box = [x1, y1, w, h]
+
+                            if (w / h) > 1.3: continue # Filtro cartelloni
+
+                            current_frame_ids.add(tid)
+                            
+                            # --- CALCOLO VELOCITÀ ---
+                            velocity = [0, 0, 0, 0]
+                            if tid in track_history:
+                                prev_box = track_history[tid]['box']
+                                # Velocità = Posizione_attuale - Posizione_precedente
+                                velocity = [curr_box[i] - prev_box[i] for i in range(4)]
+                            
+                            # Aggiorna storia con dati REALI
+                            track_history[tid] = {
+                                'box': curr_box,
+                                'velocity': velocity,
+                                'lost': 0
+                            }
+
+                            active_this_frame.append({'id': tid, 'box': curr_box, 'conf': box.conf[0]})
+
+                    # --- LOGICA DI PREDIZIONE (Simil-Kalman) ---
+                    predicted_candidates = []
+                    for tid in list(track_history.keys()):
+                        if tid not in current_frame_ids:
+                            track_history[tid]['lost'] += 1
+                            lost_count = track_history[tid]['lost']
+
+                            if lost_count <= MAX_PREDICTION_FRAMES:
+                                last_box = track_history[tid]['box']
+                                vel = track_history[tid]['velocity']
+                                
+                                # Applichiamo l'equazione del moto rettilineo uniforme: P_nuova = P_vecchia + V
+                                # Moltiplichiamo vel per un fattore di smorzamento (0.9) per evitare che il box "scappi" via
+                                damping = 0.9 
+                                pred_box = [last_box[i] + (vel[i] * damping) for i in range(4)]
+                                
+                                # Aggiorniamo la storia con la predizione (per il prossimo frame)
+                                track_history[tid]['box'] = pred_box
+                                
+                                predicted_candidates.append({
+                                    'id': tid,
+                                    'box': pred_box,
+                                    'conf': 0.10 # Confidenza bassa per i predetti
+                                })
+                            else:
+                                del track_history[tid]
+
+                    # Mix e Filtro finale
+                    all_entities = active_this_frame + predicted_candidates
+                    all_entities.sort(key=lambda x: x['conf'], reverse=True)
                     
-                    # --- Raccolta e Filtro Top-K (Closed Set Real-time) ---
-                    valid_candidates = []
-                    
-                    for box in boxes:
-                        # Se il box non ha ID (perso dal tracker), lo scartiamo o mettiamo -1
-                        if box.id is None: continue
-                        
-                        track_id = int(box.id[0])
-                        x1, y1, x2, y2 = box.xyxy[0]
-                        w = x2 - x1
-                        h = y2 - y1
-                        conf = box.conf[0]
-                        
-                        # Filtro geometrico (cartelloni bassi e larghi)
-                        if (w / h) > 1.3: continue
-                        
-                        valid_candidates.append({
-                            'line': f"{frame_id},{track_id},{x1:.2f},{y1:.2f},{w:.2f},{h:.2f},{conf:.4f},-1,1,-1\n",
-                            'conf': conf
-                        })
-                    
-                    # Ordina per confidenza e tieni solo i top 24 (22 giocatori + arbitri)
-                    valid_candidates.sort(key=lambda x: x['conf'], reverse=True)
-                    final_candidates = valid_candidates[:MAX_ENTITIES]
-                    
-                    for cand in final_candidates:
-                        f.write(cand['line'])
+                    for entity in all_entities[:MAX_ENTITIES]:
+                        tid, (x, y, w, h), conf = entity['id'], entity['box'], entity['conf']
+                        f.write(f"{frame_id},{tid},{x:.2f},{y:.2f},{w:.2f},{h:.2f},{conf:.4f},-1,1,-1\n")
 
             print(f"Salvati: {res_file_path}")
 

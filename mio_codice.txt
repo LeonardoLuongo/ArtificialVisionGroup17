@@ -1,6 +1,7 @@
 Directory structure:
 └── ArtificialVisionGroup17/
     ├── config.py
+    ├── mio_codice.txt
     ├── conda/
     │   ├── build_run.bat
     │   ├── build_run.sh
@@ -50,7 +51,7 @@ Directory structure:
         │   └── Yolo12m/
         │       ├── botsort.yaml
         │       ├── inference.py
-        │       ├── inference_ocsort.py
+        │       ├── inference_boxmot.py
         │       ├── oc-sort.yaml
         │       └── soccer_tracker.yaml
         └── utils/
@@ -83,6 +84,2913 @@ SEQMAP_DIR = OUTPUT_DIR / "seqmap"
 SEQMAP_FILE = SEQMAP_DIR / "soccer_test.txt"
 
 TRACKER_CONFIG = ROOT_DIR / "src" / "Tracker" / "Yolo12m" 
+
+
+================================================
+FILE: mio_codice.txt
+================================================
+Directory structure:
+â””â”€â”€ ArtificialVisionGroup17/
+    â”œâ”€â”€ config.py
+    â”œâ”€â”€ conda/
+    â”‚   â”œâ”€â”€ build_run.bat
+    â”‚   â”œâ”€â”€ build_run.sh
+    â”‚   â”œâ”€â”€ delete/
+    â”‚   â”‚   â”œâ”€â”€ delete.bat
+    â”‚   â”‚   â””â”€â”€ delete.sh
+    â”‚   â””â”€â”€ run/
+    â”‚       â”œâ”€â”€ run.bat
+    â”‚       â””â”€â”€ run.sh
+    â”œâ”€â”€ dataset/
+    â”‚   â””â”€â”€ tracking-2023/
+    â”‚       â””â”€â”€ dataset_yolo/
+    â”‚           â”œâ”€â”€ dataset.yaml
+    â”‚           â””â”€â”€ splits/
+    â”‚               â”œâ”€â”€ train.txt
+    â”‚               â””â”€â”€ val.txt
+    â”œâ”€â”€ models/
+    â”‚   â””â”€â”€ training_runs/
+    â”‚       â””â”€â”€ soccernet_high_precision/
+    â”‚           â”œâ”€â”€ args.yaml
+    â”‚           â””â”€â”€ results.csv
+    â”œâ”€â”€ SIMULATOR/
+    â”‚   â””â”€â”€ SIMULATOR/
+    â”‚       â”œâ”€â”€ evaluation_helper.py
+    â”‚       â””â”€â”€ simulator.py
+    â””â”€â”€ src/
+        â”œâ”€â”€ Dataset/
+        â”‚   â”œâ”€â”€ clean_gt.py
+        â”‚   â”œâ”€â”€ convert_to_yolo.py
+        â”‚   â”œâ”€â”€ create_smart_splits.py
+        â”‚   â”œâ”€â”€ create_splits.py
+        â”‚   â””â”€â”€ download_dataset.py
+        â”œâ”€â”€ Detector/
+        â”‚   â”œâ”€â”€ grounding_DINO/
+        â”‚   â”‚   â””â”€â”€ inference.py
+        â”‚   â””â”€â”€ YOLO/
+        â”‚       â”œâ”€â”€ freezing_train.py
+        â”‚       â”œâ”€â”€ inference.py
+        â”‚       â”œâ”€â”€ resume.py
+        â”‚       â””â”€â”€ train.py
+        â”œâ”€â”€ Eval/
+        â”‚   â”œâ”€â”€ run_eval.py
+        â”‚   â””â”€â”€ run_eval_detection_only.py
+        â”œâ”€â”€ Tracker/
+        â”‚   â”œâ”€â”€ interpolate_results.py
+        â”‚   â”œâ”€â”€ visualize_result.py
+        â”‚   â””â”€â”€ Yolo12m/
+        â”‚       â”œâ”€â”€ botsort.yaml
+        â”‚       â”œâ”€â”€ inference.py
+        â”‚       â”œâ”€â”€ inference_ocsort.py
+        â”‚       â”œâ”€â”€ oc-sort.yaml
+        â”‚       â””â”€â”€ soccer_tracker.yaml
+        â””â”€â”€ utils/
+            â”œâ”€â”€ __init__.py
+            â””â”€â”€ get_best_device.py
+
+================================================
+FILE: config.py
+================================================
+from pathlib import Path
+# Questo trova automaticamente la cartella dove si trova QUESTO file (la root)
+ROOT_DIR = Path(__file__).parent.resolve()
+
+MODEL_PATH = ROOT_DIR / "models"
+
+DATASET_BASIC_PATH = ROOT_DIR / "dataset"
+DATASET_TR23 = DATASET_BASIC_PATH / "tracking-2023"
+DATASET_TR23_TEST = DATASET_TR23 / "test"
+DATASET_TR23_TRAIN = DATASET_TR23 / "train"
+
+
+YOLO_DATASET_PATH = DATASET_TR23 / "dataset_yolo"
+SPLIT_DIR = YOLO_DATASET_PATH / "splits"
+
+OUTPUT_DIR = ROOT_DIR/ "out"
+DETECTOR_OUTPUT_DIR = OUTPUT_DIR / "detector_results"
+TRACKER_OUTPUT_DIR = OUTPUT_DIR / "tracker_results"
+
+SEQMAP_DIR = OUTPUT_DIR / "seqmap"
+SEQMAP_FILE = SEQMAP_DIR / "soccer_test.txt"
+
+TRACKER_CONFIG = ROOT_DIR / "src" / "Tracker" / "Yolo12m" 
+
+
+================================================
+FILE: conda/build_run.bat
+================================================
+
+@echo off
+echo [INFO] Avvio procedura combinata Build & Run...
+
+:: Chiama lo script di build
+call .\conda\build\build.bat
+
+:: Controlla se c'ÃƒÂ¨ stato un errore nella build
+if %errorlevel% neq 0 (
+    echo [ERROR] La creazione dell'environment ha fallito. Impossibile eseguire il run.
+    pause
+    exit /b %errorlevel%
+)
+
+echo [INFO] Build completata con successo. Avvio applicazione...
+echo ---------------------------------------------------------
+
+:: Chiama lo script di run
+call conda\run\run.bat
+
+
+================================================
+FILE: conda/build_run.sh
+================================================
+
+#!/bin/bash
+
+echo "[INFO] Avvio procedura combinata Build & Run..."
+
+# Assicura che gli script interni abbiano i permessi di esecuzione
+chmod +x conda/build/build.sh
+chmod +x conda/run/run.sh
+
+# Esegue la build. 
+# L'operatore '&&' assicura che il 'run' parta solo se la 'build' finisce senza errori.
+./conda/build/build.sh && \
+echo "[INFO] Build completata. Avvio applicazione..." && \
+echo "---------------------------------------------------------" && \
+./conda/run/run.sh
+
+
+================================================
+FILE: conda/delete/delete.bat
+================================================
+@echo off
+echo Removing Conda environment 'soccer_tracking'...
+call conda env remove -n soccer_tracking
+echo Deletion complete.
+pause
+
+
+================================================
+FILE: conda/delete/delete.sh
+================================================
+#!/bin/bash
+echo "Removing Conda environment 'soccer_tracking'..."
+conda env remove -n soccer_tracking
+echo "Deletion complete."
+
+
+================================================
+FILE: conda/run/run.bat
+================================================
+@echo off
+call conda activate soccer_tracking
+python main.py
+pause
+
+
+================================================
+FILE: conda/run/run.sh
+================================================
+#!/bin/bash
+# Initialize conda for shell interaction
+eval "$(conda shell.bash hook)"
+conda activate soccer_tracking
+
+# Run the main script
+# Adjust the path to your python script if necessary
+python main.py
+
+
+================================================
+FILE: dataset/tracking-2023/dataset_yolo/dataset.yaml
+================================================
+
+path: C:/Users/leona/Documents/AV_Project/ArtificialVisionGroup17/dataset/tracking-2023/dataset_yolo
+train: images/train
+val: images/val
+names:
+  0: player
+
+
+
+================================================
+FILE: dataset/tracking-2023/dataset_yolo/splits/train.txt
+================================================
+SNMOT-115
+SNMOT-102
+SNMOT-165
+SNMOT-071
+SNMOT-076
+SNMOT-099
+SNMOT-166
+SNMOT-169
+SNMOT-112
+SNMOT-098
+SNMOT-069
+SNMOT-159
+SNMOT-110
+SNMOT-114
+SNMOT-109
+SNMOT-155
+SNMOT-063
+SNMOT-100
+SNMOT-162
+SNMOT-064
+SNMOT-108
+SNMOT-070
+SNMOT-152
+SNMOT-101
+SNMOT-153
+SNMOT-103
+SNMOT-060
+SNMOT-156
+SNMOT-104
+SNMOT-163
+SNMOT-097
+SNMOT-107
+SNMOT-160
+SNMOT-105
+SNMOT-072
+SNMOT-170
+SNMOT-111
+SNMOT-164
+SNMOT-073
+SNMOT-158
+SNMOT-168
+SNMOT-062
+SNMOT-106
+SNMOT-151
+SNMOT-065
+
+
+================================================
+FILE: dataset/tracking-2023/dataset_yolo/splits/val.txt
+================================================
+SNMOT-113
+SNMOT-157
+SNMOT-066
+SNMOT-167
+SNMOT-068
+SNMOT-074
+SNMOT-075
+SNMOT-077
+SNMOT-161
+SNMOT-061
+SNMOT-067
+SNMOT-154
+
+
+================================================
+FILE: models/training_runs/soccernet_high_precision/args.yaml
+================================================
+task: detect
+mode: train
+model: C:\Users\leona\Documents\AV_Project\ArtificialVisionGroup17\models\yolo12m.pt
+data: C:\Users\leona\Documents\AV_Project\ArtificialVisionGroup17\dataset\tracking-2023\dataset_yolo\dataset.yaml
+epochs: 50
+time: null
+patience: 100
+batch: 8
+imgsz: 1024
+save: true
+save_period: -1
+cache: false
+device: '0'
+workers: 4
+project: C:\Users\leona\Documents\AV_Project\ArtificialVisionGroup17\models\training_runs
+name: soccernet_high_precision
+exist_ok: true
+pretrained: true
+optimizer: AdamW
+verbose: true
+seed: 0
+deterministic: true
+single_cls: false
+rect: false
+cos_lr: false
+close_mosaic: 10
+resume: false
+amp: true
+fraction: 1.0
+profile: false
+freeze: 10
+multi_scale: false
+compile: false
+overlap_mask: true
+mask_ratio: 4
+dropout: 0.0
+val: true
+split: val
+save_json: false
+conf: null
+iou: 0.7
+max_det: 300
+half: false
+dnn: false
+plots: true
+source: null
+vid_stride: 1
+stream_buffer: false
+visualize: false
+augment: false
+agnostic_nms: false
+classes: null
+retina_masks: false
+embed: null
+show: false
+save_frames: false
+save_txt: false
+save_conf: false
+save_crop: false
+show_labels: true
+show_conf: true
+show_boxes: true
+line_width: null
+format: torchscript
+keras: false
+optimize: false
+int8: false
+dynamic: false
+simplify: true
+opset: null
+workspace: null
+nms: false
+lr0: 0.0005
+lrf: 0.01
+momentum: 0.937
+weight_decay: 0.0005
+warmup_epochs: 3.0
+warmup_momentum: 0.8
+warmup_bias_lr: 0.1
+box: 7.5
+cls: 1.5
+dfl: 1.5
+pose: 12.0
+kobj: 1.0
+nbs: 64
+hsv_h: 0.015
+hsv_s: 0.7
+hsv_v: 0.4
+degrees: 0.0
+translate: 0.1
+scale: 0.8
+shear: 0.0
+perspective: 0.0
+flipud: 0.0
+fliplr: 0.5
+bgr: 0.0
+mosaic: 1.0
+mixup: 0.0
+cutmix: 0.0
+copy_paste: 0.0
+copy_paste_mode: flip
+auto_augment: randaugment
+erasing: 0.4
+cfg: null
+tracker: botsort.yaml
+save_dir: C:\Users\leona\Documents\AV_Project\ArtificialVisionGroup17\models\training_runs\soccernet_high_precision
+
+
+
+================================================
+FILE: models/training_runs/soccernet_high_precision/results.csv
+================================================
+epoch,time,train/box_loss,train/cls_loss,train/dfl_loss,metrics/precision(B),metrics/recall(B),metrics/mAP50(B),metrics/mAP50-95(B),val/box_loss,val/cls_loss,val/dfl_loss,lr/pg0,lr/pg1,lr/pg2
+1,447.569,1.42475,2.22499,1.05946,0.95868,0.9214,0.96817,0.59674,1.28792,1.94058,1.06499,0.0669119,0.000166272,0.000166272
+2,887.143,1.36768,1.97302,1.03163,0.95799,0.92597,0.97004,0.59467,1.30665,1.98179,1.06837,0.0337387,0.000326346,0.000326346
+3,1317.94,1.36819,1.96584,1.03074,0.95997,0.92524,0.97107,0.61393,1.25688,1.86399,1.05743,0.00055881,0.000479821,0.000479821
+4,1749.57,1.33809,1.94004,1.02651,0.96154,0.92442,0.96987,0.61122,1.28894,1.84921,1.06226,0.0004703,0.0004703,0.0004703
+5,2178.94,1.33052,1.93715,1.0135,0.95649,0.92121,0.96939,0.62146,1.23802,1.84359,1.04046,0.0004604,0.0004604,0.0004604
+6,2607.79,1.32147,1.86688,1.0067,0.945,0.91852,0.9689,0.61528,1.25833,1.8719,1.05105,0.0004505,0.0004505,0.0004505
+7,3037.92,1.3269,1.88704,1.01525,0.95404,0.93059,0.97126,0.6225,1.24813,1.83806,1.04554,0.0004406,0.0004406,0.0004406
+8,3466.62,1.30661,1.85714,1.00729,0.95051,0.91299,0.96921,0.62049,1.24776,1.82743,1.04766,0.0004307,0.0004307,0.0004307
+9,3896.52,1.30312,1.85366,1.00643,0.95512,0.93434,0.97116,0.61975,1.25311,1.81044,1.04269,0.0004208,0.0004208,0.0004208
+10,4325.21,1.30346,1.84591,1.00634,0.95688,0.92377,0.97159,0.634,1.21538,1.80568,1.03421,0.0004109,0.0004109,0.0004109
+11,4754.44,1.29487,1.82269,1.00001,0.93798,0.92601,0.97019,0.61983,1.24011,1.81233,1.03511,0.000401,0.000401,0.000401
+12,5182.95,1.28976,1.80785,0.9958,0.9499,0.92779,0.97172,0.62028,1.25242,1.81158,1.03641,0.0003911,0.0003911,0.0003911
+13,5616.6,1.28064,1.80549,0.99726,0.96338,0.93376,0.97371,0.63449,1.22811,1.7293,1.03506,0.0003812,0.0003812,0.0003812
+14,6046.26,1.28075,1.79029,0.99214,0.96074,0.93508,0.97383,0.62471,1.2663,1.7461,1.04171,0.0003713,0.0003713,0.0003713
+15,6475.1,1.27297,1.77592,0.99174,0.95994,0.93823,0.97481,0.62864,1.25394,1.70134,1.03916,0.0003614,0.0003614,0.0003614
+16,6902.98,1.26282,1.77012,0.98337,0.95679,0.93628,0.97384,0.63151,1.23729,1.72367,1.03672,0.0003515,0.0003515,0.0003515
+17,7332.22,1.26656,1.76802,0.98617,0.96207,0.93803,0.97493,0.63468,1.22819,1.7153,1.02989,0.0003416,0.0003416,0.0003416
+18,7760.29,1.26348,1.76519,0.98723,0.95956,0.9349,0.97411,0.62429,1.27405,1.71117,1.04473,0.0003317,0.0003317,0.0003317
+19,8189.46,1.25605,1.76327,0.98634,0.9576,0.93584,0.97429,0.62858,1.24221,1.76818,1.03298,0.0003218,0.0003218,0.0003218
+20,8617.67,1.25469,1.75562,0.98974,0.9578,0.93848,0.97517,0.62617,1.24876,1.793,1.03722,0.0003119,0.0003119,0.0003119
+21,9046.98,1.24354,1.74703,0.98295,0.9595,0.94142,0.97406,0.62691,1.24121,1.73882,1.03508,0.000302,0.000302,0.000302
+22,9475.05,1.23584,1.72658,0.9843,0.96071,0.94273,0.97532,0.63368,1.23811,1.69519,1.03141,0.0002921,0.0002921,0.0002921
+23,9903.4,1.23422,1.71204,0.98296,0.95972,0.93131,0.97393,0.63677,1.22855,1.71784,1.02759,0.0002822,0.0002822,0.0002822
+24,10331.5,1.23661,1.71899,0.98367,0.9584,0.92701,0.97268,0.63623,1.2044,1.78085,1.02322,0.0002723,0.0002723,0.0002723
+25,10760.6,1.22654,1.70163,0.97535,0.96055,0.94304,0.97691,0.64068,1.23192,1.64138,1.03212,0.0002624,0.0002624,0.0002624
+26,11189.1,1.22765,1.69923,0.97694,0.96461,0.93993,0.97609,0.63883,1.22881,1.66931,1.02809,0.0002525,0.0002525,0.0002525
+27,11619.3,1.22432,1.68023,0.97218,0.96044,0.94294,0.97602,0.6381,1.22186,1.69699,1.02421,0.0002426,0.0002426,0.0002426
+28,12047.2,1.22033,1.6854,0.9793,0.96217,0.9365,0.97504,0.63678,1.23162,1.66291,1.02865,0.0002327,0.0002327,0.0002327
+29,12475.5,1.2175,1.71419,0.97196,0.96138,0.93703,0.97517,0.64064,1.21686,1.67209,1.02421,0.0002228,0.0002228,0.0002228
+30,12903.5,1.20862,1.66255,0.9713,0.9579,0.93953,0.97602,0.63905,1.22365,1.68362,1.02473,0.0002129,0.0002129,0.0002129
+31,13331.1,1.21134,1.68321,0.97011,0.95955,0.93416,0.97451,0.63865,1.21962,1.70244,1.02457,0.000203,0.000203,0.000203
+32,13758.9,1.20666,1.66219,0.97105,0.9592,0.93843,0.97631,0.64161,1.21473,1.67525,1.02512,0.0001931,0.0001931,0.0001931
+33,14186.9,1.20564,1.65228,0.97004,0.96207,0.93476,0.97526,0.63966,1.21864,1.65701,1.02506,0.0001832,0.0001832,0.0001832
+34,14614.5,1.203,1.64672,0.96582,0.96085,0.9376,0.97665,0.63776,1.23375,1.65289,1.02936,0.0001733,0.0001733,0.0001733
+35,15042,1.19375,1.63764,0.96448,0.96039,0.93335,0.97559,0.6419,1.22889,1.63489,1.02736,0.0001634,0.0001634,0.0001634
+36,15470.6,1.19486,1.64102,0.96423,0.96238,0.93903,0.97623,0.64042,1.22618,1.62954,1.02917,0.0001535,0.0001535,0.0001535
+37,15898.6,1.19341,1.61721,0.96263,0.96631,0.94548,0.97785,0.64335,1.22626,1.5961,1.027,0.0001436,0.0001436,0.0001436
+38,16327.1,1.1875,1.63686,0.96185,0.96213,0.94051,0.97615,0.64022,1.23035,1.62712,1.02631,0.0001337,0.0001337,0.0001337
+39,16755.2,1.17982,1.62287,0.96113,0.96086,0.93497,0.97601,0.64319,1.21675,1.65197,1.0227,0.0001238,0.0001238,0.0001238
+40,17183,1.18055,1.6151,0.9603,0.96529,0.94083,0.97646,0.64042,1.22703,1.60732,1.02572,0.0001139,0.0001139,0.0001139
+41,17637.2,1.14196,1.55877,1.00045,0.96135,0.93736,0.9753,0.64043,1.22165,1.62466,1.02363,0.000104,0.000104,0.000104
+42,18061.5,1.13397,1.54957,0.99986,0.96317,0.94016,0.97603,0.64107,1.22981,1.60991,1.0305,9.41e-05,9.41e-05,9.41e-05
+43,18485.6,1.13515,1.54654,0.99803,0.96248,0.94094,0.9755,0.63891,1.22657,1.62246,1.02637,8.42e-05,8.42e-05,8.42e-05
+44,18910.5,1.12502,1.53339,0.99562,0.96535,0.9419,0.97654,0.64281,1.22792,1.596,1.02637,7.43e-05,7.43e-05,7.43e-05
+45,19333.5,1.12433,1.52733,0.99292,0.96351,0.93808,0.97622,0.64354,1.22052,1.61936,1.02428,6.44e-05,6.44e-05,6.44e-05
+46,19757.6,1.11991,1.52631,0.99347,0.96395,0.9427,0.97615,0.64031,1.23533,1.59188,1.02949,5.45e-05,5.45e-05,5.45e-05
+47,20182.9,1.12514,1.51165,0.99349,0.96352,0.93894,0.97636,0.64475,1.22346,1.60763,1.02576,4.46e-05,4.46e-05,4.46e-05
+48,20606.8,1.11644,1.50302,0.99268,0.96601,0.94136,0.97677,0.64802,1.2217,1.55978,1.02792,3.47e-05,3.47e-05,3.47e-05
+49,21030.6,1.11139,1.4796,0.99196,0.96444,0.93941,0.97655,0.64586,1.22468,1.5829,1.02631,2.48e-05,2.48e-05,2.48e-05
+50,21455.5,1.11158,1.4961,0.99229,0.96402,0.94005,0.97696,0.64517,1.2252,1.57847,1.02707,1.49e-05,1.49e-05,1.49e-05
+
+
+
+================================================
+FILE: SIMULATOR/SIMULATOR/evaluation_helper.py
+================================================
+import os, shutil, glob
+from pathlib import Path
+import cv2
+import trackeval
+from typing import Dict, Tuple, List
+import numpy as np
+
+def natural_key(path: str) -> int:
+    """Extracts numeric frame index from a file path for natural sorting."""
+    name = os.path.basename(path)
+    return int(name.split(".")[0])
+
+def _read_behavior(path: str) -> Dict[Tuple[int, int], int]:
+    out: Dict[Tuple[int, int], int] = {} # (frame, region_id) -> n_people
+    import csv
+    with open(path, "r", newline="") as f:
+        reader = csv.reader(f)
+        for row in reader:
+            if not row or len(row) < 3:
+                continue
+            fr = int(row[0])
+            rid = int(row[1])
+            n = int(float(row[2]))
+            out[(fr, rid)] = n
+    return out
+
+def compute_nmae_from_behavior_files(dataset_root: str, predictions_root: str, group: str) -> dict:
+    """
+    Computes MAE and nMAE globally over all videos and both ROI ids
+    using files:
+      GT:   <video>/gt/behavior_gt.txt
+      Pred: <predictions_root>/behavior_<video>_<group>.txt
+
+    Missing prediction entries are treated as 0, like your old code.
+    """
+    # reuse your existing _read_behavior(path) which returns {(frame, roi): count}
+    abs_err_sum = 0.0
+    n = 0
+    has_all = True
+
+    video_ids = [d for d in os.listdir(dataset_root) if os.path.isdir(os.path.join(dataset_root, d)) and d.isdigit()] # get all the video ids
+    video_ids.sort(key=lambda s: int(s)) # sort numerically
+
+    for vid in video_ids:
+        gt_path = os.path.join(dataset_root, vid, "gt", "behavior_gt.txt")
+        pr_path = os.path.join(predictions_root, f"behavior_{vid}_{group}.txt")
+
+        if not (os.path.isfile(gt_path) and os.path.isfile(pr_path)):
+            has_all = False
+            continue
+
+        # map (frame, region_id) -> n_people
+        gt_b = _read_behavior(gt_path)
+        pr_b = _read_behavior(pr_path)
+
+        # Evaluate only where GT has an entry (same as your old codeÃ¢â‚¬â„¢s logic)
+        for key, gt_val in gt_b.items(): # for each (frame, region_id) in GT
+            pred_val = pr_b.get(key, 0) # select prediction associated to that key, default to 0 if missing
+            abs_err_sum += abs(pred_val - gt_val) # accumulate absolute error
+            n += 1
+
+    if not has_all or n == 0: # if any video missing or no entries to evaluate
+        return {"has_behavior": False, "MAE": None, "nMAE": None}
+
+    mae = abs_err_sum / n
+    nmae = (10.0 - min(10.0, max(0.0, mae))) / 10.0 # normalize MAE to [0,1] range as per metric definition
+    return {"has_behavior": True, "MAE": mae, "nMAE": nmae}
+
+
+# ============================================================
+# Build TrackEval temp folders in MOTChallenge2DBox layout
+# ============================================================
+
+
+def ensure_10col_and_force_class1(src_txt: str, dst_txt: str) -> None:
+    """
+    Writes a MOT 10-column file:
+      frame,id,x,y,w,h,conf,class,vis,unused
+    Forces class=1 to be compatible with TrackEval's pedestrian-class evaluation.
+    """
+    Path(dst_txt).parent.mkdir(parents=True, exist_ok=True)
+    out_lines: List[str] = []
+
+    with open(src_txt, "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            parts = [p.strip() for p in line.split(",")]
+            if len(parts) < 6:
+                continue
+
+            frame = parts[0]
+            tid   = parts[1]
+            x, y, w, h = parts[2:6]
+
+            conf = parts[6] if len(parts) >= 7 else "1"
+            cls  = "1"  # force pedestrian
+            vis  = parts[8] if len(parts) >= 9 else "-1"
+            z    = parts[9] if len(parts) >= 10 else "-1"
+
+            out_lines.append(",".join([frame, tid, x, y, w, h, conf, cls, vis, z]))
+
+    with open(dst_txt, "w") as f:
+        f.write("\n".join(out_lines) + ("\n" if out_lines else ""))
+
+def write_seqinfo_ini(seq_dir: str, seq_name: str, fps: float, img_w: int, img_h: int, seq_len: int) -> None:
+    """
+    Minimal seqinfo.ini for TrackEval MotChallenge2DBox, used also to compute SoccerNet Challenge metrics.
+    it is used to give info about frame size, fps, length, etc. to TrackEval.
+    it will write a seqinfo.ini file in seq_dir.
+    """
+    content = "\n".join([
+        "[Sequence]",
+        f"name={seq_name}",
+        "imDir=img1",
+        f"frameRate={int(round(fps))}",
+        f"seqLength={int(seq_len)}",
+        f"imWidth={int(img_w)}",
+        f"imHeight={int(img_h)}",
+        "imExt=.jpg",
+        ""
+    ])
+    with open(os.path.join(seq_dir, "seqinfo.ini"), "w") as f:
+        f.write(content)
+
+
+def list_video_ids(dataset_root: str) -> List[str]:
+    vids = []
+    for name in os.listdir(dataset_root):
+        p = os.path.join(dataset_root, name)
+        if os.path.isdir(p) and name.isdigit():
+            vids.append(name)
+    return sorted(vids, key=lambda s: int(s))
+
+
+
+# ============================================================
+# TrackEval call: compute only HOTA@alpha=0.50
+# ============================================================
+def build_trackeval_structure(
+    dataset_root: str,
+    predictions_root: str,
+    group: str,
+    split: str,
+    fps: float,
+    tmp_root: str,
+    benchmark: str = "SNMOT",
+    tracker_name: str = "test",
+) -> Tuple[str, str, str]:
+    """
+    Creates:
+      tmp_root/
+        gt/<BENCHMARK>-<SPLIT>/<SEQ>/gt/gt.txt
+        gt/<BENCHMARK>-<SPLIT>/<SEQ>/seqinfo.ini
+        trackers/<BENCHMARK>-<SPLIT>/<TRACKER>/data/<SEQ>.txt
+        seqmaps/<BENCHMARK>-<SPLIT>.txt
+    Returns:
+      (gt_folder, trackers_folder, seqmap_file)
+    """
+    tmp_root = os.path.abspath(tmp_root) # make sure it's absolute
+    if os.path.exists(tmp_root): # clean up in case it already exists
+        shutil.rmtree(tmp_root)
+    os.makedirs(tmp_root, exist_ok=True) # create base temp folder with proper format to compute metrics using TrackEval
+
+    gt_folder = os.path.join(tmp_root, "gt") # will contain the ground-truth and images info in TrackEval format
+    tr_folder = os.path.join(tmp_root, "trackers") # will contain the tracker predictions in TrackEval format
+    sm_folder = os.path.join(tmp_root, "seqmaps") # will contain the series of sequences that we will evaluate
+    os.makedirs(gt_folder, exist_ok=True)
+    os.makedirs(tr_folder, exist_ok=True)
+    os.makedirs(sm_folder, exist_ok=True)
+
+    bench_split = f"{benchmark}-{split}"
+    gt_bs = os.path.join(gt_folder, bench_split)
+    tr_bs = os.path.join(tr_folder, bench_split, tracker_name, "data")
+    os.makedirs(gt_bs, exist_ok=True)
+    os.makedirs(tr_bs, exist_ok=True)
+
+    seqs = list_video_ids(dataset_root) # list of numeric folder names in dataset_root
+    if not seqs:
+        raise FileNotFoundError(f"No numeric video folders found in: {dataset_root}")
+
+    for seq in seqs: # iterate over each numeric video folder
+        src_seq = os.path.join(dataset_root, seq) # source sequence folder, e.g., #dataset_root/1
+        src_img1 = os.path.join(src_seq, "img1") # source images folder, e.g., #dataset_root/1/img1
+        src_gt = os.path.join(src_seq, "gt", "gt.txt") # source GT file, e.g., #dataset_root/1/gt/gt.txt
+        src_pred = os.path.join(predictions_root, f"tracking_{seq}_{group}.txt") # source prediction file, e.g., #predictions_root/tracking_1_01.txt
+
+        # check existence of required files
+        if not os.path.isfile(src_gt): 
+            raise FileNotFoundError(f"Missing GT gt.txt: {src_gt}")
+        if not os.path.isfile(src_pred):
+            raise FileNotFoundError(f"Missing prediction file: {src_pred}")
+
+        frame_paths = sorted(glob.glob(os.path.join(src_img1, "*.jpg")), key=natural_key) # get all frames ordered by frame index
+        if not frame_paths: # error in case no frames found
+            raise FileNotFoundError(f"No frames in: {src_img1}")
+
+        im0 = cv2.imread(frame_paths[0]) # read first frame to get dimensions, assuming all frames have same size
+        if im0 is None:
+            raise RuntimeError(f"Could not read: {frame_paths[0]}")
+        H, W = im0.shape[:2] # get height and width
+        seq_len = len(frame_paths) # number of frames in the sequence
+
+        # Destination GT sequence folder
+        dst_seq = os.path.join(gt_bs, seq)
+        os.makedirs(dst_seq, exist_ok=True)
+        os.makedirs(os.path.join(dst_seq, "gt"), exist_ok=True)
+        os.makedirs(os.path.join(dst_seq, "img1"), exist_ok=True)  # can be empty; TrackEval uses seqinfo
+
+        write_seqinfo_ini(dst_seq, seq_name=seq, fps=fps, img_w=W, img_h=H, seq_len=seq_len) # write seqinfo.ini file used by TrackEval
+
+        # it rewrite the GT and prediction file in 10-column format to ensure compatibility, class forced to 1 (pedestrian)
+        ensure_10col_and_force_class1(src_gt, os.path.join(dst_seq, "gt", "gt.txt")) 
+        ensure_10col_and_force_class1(src_pred, os.path.join(tr_bs, f"{seq}.txt"))
+
+    # Seqmap file (TrackEval expects first line header; then one seq=video per line) it is used to tell TrackEval which sequences to evaluate
+    seqmap_file = os.path.join(sm_folder, f"{bench_split}.txt")
+    with open(seqmap_file, "w") as f:
+        f.write("name\n")
+        for seq in seqs:
+            f.write(f"{seq}\n")
+
+    return gt_folder, tr_folder, seqmap_file
+
+
+def compute_hota_at_05_trackeval(
+    gt_folder: str,
+    trackers_folder: str,
+    seqmap_file: str,
+    split: str,
+    benchmark: str = "SNMOT",
+    tracker_name: str = "test",
+) -> float:
+    """
+    Runs TrackEval MotChallenge2DBox with only HOTA metric family,
+    then extracts HOTA at alpha=0.50 (not averaged over alphas).
+    """
+    # --- configs (no argparse; direct dicts) ---
+    eval_config = trackeval.Evaluator.get_default_eval_config() # get default eval config, as done in SoccerNet Challenge
+    eval_config["DISPLAY_LESS_PROGRESS"] = True # show less progress otherwise too verbose, set to False to see full progress
+
+    dataset_config = trackeval.datasets.MotChallenge2DBox.get_default_dataset_config() # get default dataset config for MotChallenge2DBox, as done in SoccerNet Challenge
+    dataset_config.update({
+        "BENCHMARK": benchmark,
+        "GT_FOLDER": gt_folder,
+        "TRACKERS_FOLDER": trackers_folder,
+        "TRACKERS_TO_EVAL": [tracker_name],
+        "SPLIT_TO_EVAL": split,
+        "SEQMAP_FILE": seqmap_file,
+        "DO_PREPROC": False,          # matches SoccerNet wrapper style
+        "TRACKER_SUB_FOLDER": "data",
+        "OUTPUT_SUB_FOLDER": "eval_results",
+    }) # update with our specific paths and settings
+
+    metrics_config = {"METRICS": ["HOTA"]} # only HOTA metric needed for the Challenge
+
+    evaluator = trackeval.Evaluator(eval_config) # create evaluator with eval config
+    dataset_list = [trackeval.datasets.MotChallenge2DBox(dataset_config)] # create dataset list with our dataset config
+    metrics_list = [trackeval.metrics.HOTA(metrics_config)] # create metrics list with HOTA metric
+
+    output_res, _ = evaluator.evaluate(dataset_list, metrics_list) # run official evaluation 
+
+    # Find alpha index for 0.50 from the metric itself
+    hota_metric = trackeval.metrics.HOTA(metrics_config) # create a HOTA curve metrics for an array of alphas
+    alphas = np.array(hota_metric.array_labels, dtype=float) # get array of alphas used in HOTA curve
+    idx = int(np.where(np.isclose(alphas, 0.5))[0][0]) # find index of alpha=0.50 
+
+    # SoccerNet-style extraction uses COMBINED_SEQ and class key "pedestrian"
+    hota_curve = output_res["MotChallenge2DBox"][tracker_name]["COMBINED_SEQ"]["pedestrian"]["HOTA"]["HOTA"] # from the output results, get HOTA curve for combined sequences and pedestrian class 
+    return float(hota_curve[idx]) # return HOTA@0.50 value as float
+
+
+
+================================================
+FILE: SIMULATOR/SIMULATOR/simulator.py
+================================================
+import os
+import glob
+import json
+import shutil
+from collections import defaultdict
+from typing import Dict, List, Tuple, Optional
+import csv
+
+import cv2
+import numpy as np
+# ---- NumPy 2.x compatibility for TrackEval (older code uses deprecated aliases) ----
+if not hasattr(np, "float"):
+    np.float = float
+if not hasattr(np, "int"):
+    np.int = int
+if not hasattr(np, "bool"):
+    np.bool = bool
+
+from evaluation_helper import compute_nmae_from_behavior_files, compute_hota_at_05_trackeval, build_trackeval_structure, list_video_ids, natural_key
+
+# ============================================================
+# IO helpers for MOT-style tracking text files (10 columns)
+# ============================================================
+
+def read_behavior_per_frame(path: str) -> Dict[int, Dict[int, int]]:
+    """
+    Reads behavior file lines: frame, roi_id, count
+    Returns: frame -> {roi_id: count}
+    """
+    per_frame: Dict[int, Dict[int, int]] = defaultdict(dict)
+
+    with open(path, "r", newline="") as f:
+        reader = csv.reader(f)
+        for row in reader:
+            if not row or len(row) < 3:
+                continue
+            fr = int(row[0])
+            rid = int(row[1])
+            n = int(float(row[2]))
+            per_frame[fr][rid] = n
+    return dict(per_frame)
+
+def read_mot_txt_per_frame(txt_path: str) -> Dict[int, List[Tuple[int, int, int, int, int]]]:
+    """
+    Reads a MOT-style txt (CSV):
+      frame, id, x, y, w, h, conf, class, vis, ...
+    Returns per_frame dict:
+      frame -> [(id, x, y, w, h), ...]
+    """
+    per_frame = defaultdict(list)
+    with open(txt_path, "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            parts = [p.strip() for p in line.split(",")]
+            if len(parts) < 6:
+                continue
+            fr = int(float(parts[0]))
+            oid = int(float(parts[1]))
+            x = int(float(parts[2]))
+            y = int(float(parts[3]))
+            w = int(float(parts[4]))
+            h = int(float(parts[5]))
+            per_frame[fr].append((oid, x, y, w, h))
+    return dict(per_frame)
+
+
+# ============================================================
+# ROI + drawing helpers (optional; uses your roi.json format)
+# ============================================================
+
+def draw_roi_counts(
+    img,
+    rois: dict,
+    roi_colors: dict,
+    counts_for_frame: Dict[int, int],
+    roi_ids: Tuple[int, int] = (1, 2),
+):
+    H, W = img.shape[:2]
+    roi_names = sorted(rois.keys())
+
+    for k, roi_name in enumerate(roi_names[:len(roi_ids)]):
+        rid = roi_ids[k]
+        val = int(counts_for_frame.get(rid, 0))
+
+        r = rois[roi_name]
+        x1, y1, x2, y2 = roi_pixel_rect(r, W, H)
+        x1, y1, x2, y2 = clip_rect(x1, y1, x2, y2, W, H)
+
+        # place text inside ROI (top-left with padding)
+        tx = x1 + 10
+        ty = y1 + 70
+
+        color = roi_colors.get(roi_name, (255, 255, 255))
+
+        # bigger number
+        cv2.putText(
+            img,
+            str(val),
+            (tx, ty),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            2.5,   # font scale (bigger)
+            color,
+            6,     # thickness (bolder)
+            cv2.LINE_AA,
+        )
+
+def load_rois(roi_json_path: str) -> dict:
+    with open(roi_json_path, "r") as f:
+        return json.load(f)
+
+
+def roi_pixel_rect(roi_norm: dict, img_w: int, img_h: int) -> Tuple[int, int, int, int]:
+    x1 = int(round(roi_norm["x"] * img_w))
+    y1 = int(round(roi_norm["y"] * img_h))
+    rw = int(round(roi_norm["width"] * img_w))
+    rh = int(round(roi_norm["height"] * img_h))
+    return x1, y1, x1 + rw, y1 + rh
+
+
+def clip_rect(x1: int, y1: int, x2: int, y2: int, w: int, h: int) -> Tuple[int, int, int, int]:
+    x1 = max(0, min(w - 1, x1))
+    y1 = max(0, min(h - 1, y1))
+    x2 = max(0, min(w - 1, x2))
+    y2 = max(0, min(h - 1, y2))
+    return x1, y1, x2, y2
+
+
+def draw_rois(img, rois: dict, roi_colors: Optional[dict] = None):
+    roi_colors = roi_colors or {}
+    H, W = img.shape[:2]
+    for name, r in rois.items():
+        x1, y1, x2, y2 = roi_pixel_rect(r, W, H)
+        x1, y1, x2, y2 = clip_rect(x1, y1, x2, y2, W, H)
+        color = roi_colors.get(name, (0, 255, 0))
+        cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
+        cv2.putText(img, name, (x1, max(0, y1 - 8)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2, cv2.LINE_AA)
+
+
+def draw_boxes_with_ids(img, items, color=(0, 255, 255), draw_ids=True):
+    H, W = img.shape[:2]
+    for (obj_id, x, y, bw, bh) in items:
+        x1, y1, x2, y2 = clip_rect(x, y, x + bw, y + bh, W, H)
+        cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
+        if draw_ids:
+            cv2.putText(img, str(obj_id), (x1, max(0, y1 - 6)),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2, cv2.LINE_AA)
+
+def bbox_base_center(x: int, y: int, w: int, h: int) -> Tuple[int, int]:
+    # base-center = (center_x, bottom_y)
+    return int(round(x + w / 2.0)), int(round(y + h))
+
+def point_in_rect(px: int, py: int, rect: Tuple[int, int, int, int]) -> bool:
+    x1, y1, x2, y2 = rect
+    return (x1 <= px <= x2) and (y1 <= py <= y2)
+
+def draw_boxes_roi_colored(
+    img,
+    items,
+    rois: dict,
+    roi_colors: dict,
+    out_color=(0, 255, 255),   # yellow in BGR
+    draw_ids=True
+):
+    """
+    Boxes inside an ROI (base-center point in ROI) take the ROI color.
+    Boxes outside all ROIs are yellow (out_color).
+    """
+    H, W = img.shape[:2]
+    roi_rects = [(name, roi_pixel_rect(r, W, H)) for name, r in rois.items()]
+
+    for (obj_id, x, y, bw, bh) in items:
+        cx, cy = bbox_base_center(x, y, bw, bh)
+
+        roi_name = None
+        for name, rect in roi_rects: # for this logic if a box is inside multiple rois, it takes the first one found roi name and color
+            if point_in_rect(cx, cy, rect):
+                roi_name = name
+                break
+
+        color = roi_colors.get(roi_name, out_color) if roi_name else out_color
+
+        x1, y1, x2, y2 = clip_rect(x, y, x + bw, y + bh, W, H)
+        cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
+        cv2.circle(img, (max(0, min(W - 1, cx)), max(0, min(H - 1, cy))), 3, color, -1)
+        if draw_ids:
+            cv2.putText(img, str(obj_id), (x1, max(0, y1 - 6)),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2, cv2.LINE_AA)
+
+
+# ============================================================
+# Interactive simulation viewer + final TrackEval HOTA@0.50
+# ============================================================
+
+def simulate_and_eval_hota05(
+    dataset_root: str,
+    predictions_root: str,
+    group: str,
+    fps: float = 25.0,
+    split: str = "test",
+    window_name: str = "GT (left) | PRED (right)",
+    tmp_root: str = "./_tmp_trackeval_soccernet",
+    show_window: bool = True,
+):
+    video_ids = list_video_ids(dataset_root)
+    if not video_ids:
+        raise FileNotFoundError(f"No numbered video folders found in: {dataset_root}")
+
+    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+
+    if show_window:
+        ###################################################
+        ########## Interactive simulation viewer ##########
+        ###################################################
+        for vid in video_ids:
+            vid_dir = os.path.join(dataset_root, vid)
+            frames_folder = os.path.join(vid_dir, "img1")
+            gt_track_path = os.path.join(vid_dir, "gt", "gt.txt")
+            roi_json_path = os.path.join(vid_dir, "roi.json")  # optional
+            pred_track_path = os.path.join(predictions_root, f"tracking_{vid}_{group}.txt")
+
+            gt_beh_path = os.path.join(vid_dir, "gt", "behavior_gt.txt")
+            pr_beh_path = os.path.join(predictions_root, f"behavior_{vid}_{group}.txt")
+
+            # create a structure that maps each frame each roi to the count of objects in that roi
+            gt_beh = read_behavior_per_frame(gt_beh_path) if os.path.isfile(gt_beh_path) else {} # gt
+            pr_beh = read_behavior_per_frame(pr_beh_path) if os.path.isfile(pr_beh_path) else {} # pred
+
+            if not os.path.isfile(gt_track_path):
+                raise FileNotFoundError(f"Missing GT gt.txt for video {vid}: {gt_track_path}")
+            if not os.path.isfile(pred_track_path):
+                raise FileNotFoundError(f"Missing prediction tracking for video {vid}: {pred_track_path}")
+
+            rois = load_rois(roi_json_path) if os.path.isfile(roi_json_path) else None
+            roi_colors = {}
+            if rois is not None:
+                # pick 2 rois deterministically: first = blue, second = red
+                roi_names = sorted(rois.keys()) # rois.keys() = dict_keys(['roi1', 'roi2'])
+                if len(roi_names) >= 1: # roi 1 = blue
+                    roi_colors[roi_names[0]] = (255, 0, 0)   # blue (BGR)
+                if len(roi_names) >= 2: # roi 2 = red
+                    roi_colors[roi_names[1]] = (0, 0, 255)   # red (BGR)
+
+            # map frame id -> [(onj id, x, y, w, h), ...]
+            gt_per_frame = read_mot_txt_per_frame(gt_track_path) #gt
+            pred_per_frame = read_mot_txt_per_frame(pred_track_path) #pred
+
+            frame_paths = sorted(glob.glob(os.path.join(frames_folder, "*.jpg")), key=natural_key)
+            if not frame_paths:
+                raise FileNotFoundError(f"No jpg frames found for video {vid}: {frames_folder}")
+
+            delay_ms = max(1, int(round(1000.0 / max(1e-6, fps)))) # number of milliseconds between frames to match fps (ms to wait between frames)
+            paused = False
+            i = 0
+
+            while True:
+                if not paused:
+                    if i >= len(frame_paths): # end of video
+                        break
+
+                    frame = cv2.imread(frame_paths[i]) # read actual frame
+                    if frame is None: # case of read error
+                        i += 1
+                        continue
+
+                    frame_idx = i + 1  # starting from 1 
+
+                    gt_list = gt_per_frame.get(frame_idx, []) # read the GT boxes for this frame
+                    pr_list = pred_per_frame.get(frame_idx, []) # read the PRED boxes for this frame
+
+                    left = frame.copy() # GT stream on left
+                    right = frame.copy() # PRED stream on right
+
+                    # --- Behavior overlay (GT left, Pred right) ---
+                    gt_counts = gt_beh.get(frame_idx, {}) # read the  dict of roi_id -> count for this frame
+                    pr_counts = pr_beh.get(frame_idx, {}) # read the  dict of roi_id -> count for this frame
+
+                    # assuming roi ids are 1 and 2
+                    gt_r1 = gt_counts.get(1, 0) # number of objects in roi 1 GT
+                    gt_r2 = gt_counts.get(2, 0) # number of objects in roi 2 GT
+                    pr_r1 = pr_counts.get(1, 0) # number of objects in roi 1 PRED
+                    pr_r2 = pr_counts.get(2, 0) # number of objects in roi 2 PRED
+
+                    gt_total = gt_r1 + gt_r2 # total number of objects GT in the rois
+                    pr_total = pr_r1 + pr_r2 # total number of objects PRED in the rois
+
+                    # draw total counts at bottom-left
+                    cv2.putText(left,  f"TOTAL: {gt_total}", (10, left.shape[0]-20),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255,255,255), 2, cv2.LINE_AA)
+                    cv2.putText(right, f"TOTAL: {pr_total}", (10, right.shape[0]-20),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255,255,255), 2, cv2.LINE_AA)
+
+                    # --- Draw ROIs, counts, boxes ---
+                    if rois is not None:
+                        # draw ROIs
+                        draw_rois(left, rois, roi_colors)
+                        draw_rois(right, rois, roi_colors)
+
+                        # draw counts per roi at top-left read from behavior files
+                        draw_roi_counts(left,  rois, roi_colors, gt_counts, roi_ids=(1, 2))
+                        draw_roi_counts(right, rois, roi_colors, pr_counts, roi_ids=(1, 2))
+
+                        # understand between all boxes which are inside which roi, and color roi colored boxes inside the roi and yellow those outside all rois
+                        draw_boxes_roi_colored(left, gt_list, rois, roi_colors, out_color=(0, 255, 255), draw_ids=True)
+                        draw_boxes_roi_colored(right, pr_list, rois, roi_colors, out_color=(0, 255, 255), draw_ids=True)
+                    else:
+                        # no ROI -> everything yellow
+                        draw_boxes_with_ids(left, gt_list, color=(0, 255, 255), draw_ids=True)
+                        draw_boxes_with_ids(right, pr_list, color=(0, 255, 255), draw_ids=True)
+
+                    # frame info overlay
+                    cv2.putText(left, f"GT | video {vid} | {group} | frame {frame_idx}/{len(frame_paths)}",
+                                (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2, cv2.LINE_AA)
+                    cv2.putText(right, f"PRED | video {vid} | {group} | frame {frame_idx}/{len(frame_paths)}",
+                                (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2, cv2.LINE_AA)
+
+                    combined = cv2.hconcat([left, right]) # concatenate left and right images
+                    cv2.line(combined, (left.shape[1], 0), (left.shape[1], combined.shape[0] - 1),
+                            (255, 255, 255), 2) # vertical line in the middle
+
+                    cv2.imshow(window_name, combined) # show the combined image
+                    i += 1
+
+                key = cv2.waitKey(delay_ms) & 0xFF # wait for key press with delay matching fps
+                if key in (ord("q"), 27): # 'q' or 'Esc' to quit
+                    cv2.destroyAllWindows()
+                    return
+                if key == ord(" "): # space to pause/play
+                    paused = not paused
+                if key == ord("n"): # 'n' for next video
+                    break
+
+            # End-of-video pause
+            print(f"Finished video {vid}. Press 'n' for next, or 'q'/'Esc' to quit.")
+            while True:
+                key = cv2.waitKey(0) & 0xFF # wait indefinitely for key press
+                if key in (ord("q"), 27): # 'q' or 'Esc' to quit
+                    cv2.destroyAllWindows()
+                    return
+                if key == ord("n"): # 'n' for next video
+                    break
+
+        cv2.destroyAllWindows()
+        ###################################################
+        ###################################################
+        ###################################################
+
+    
+    ##################################################
+    ###### metrics computation with TrackEval ########
+    ##################################################
+
+    # --- TrackEval HOTA@0.50 on the whole dataset (official computation) ---
+
+    # prepare TrackEval folder structure
+    gt_folder, tr_folder, seqmap_file = build_trackeval_structure(
+        dataset_root=dataset_root,
+        predictions_root=predictions_root,
+        group=group,
+        split=split,
+        fps=fps,
+        tmp_root=tmp_root,
+        benchmark="SNMOT",
+        tracker_name="test",
+    )
+
+    # compute HOTA@0.50 using TrackEval
+    hota_05 = compute_hota_at_05_trackeval(
+        gt_folder=gt_folder,
+        trackers_folder=tr_folder,
+        seqmap_file=seqmap_file,
+        split=split,
+        benchmark="SNMOT",
+        tracker_name="test",
+    )
+
+    shutil.rmtree(os.path.abspath(tmp_root), ignore_errors=True)
+    print(f"\n=== TrackEval (SoccerNet-style) HOTA@0.50 ===\nHOTA@0.50: {hota_05:.6f}")
+
+    print("\n--- Checking behavior files ---")
+    missing = 0
+    for vid in list_video_ids(dataset_root):
+        gt_b = os.path.join(dataset_root, vid, "gt", "behavior_gt.txt")
+        pr_b = os.path.join(predictions_root, f"behavior_{vid}_{group}.txt")
+        if not os.path.isfile(gt_b):
+            print("MISSING GT behavior:", gt_b)
+            missing += 1
+        if not os.path.isfile(pr_b):
+            print("MISSING PRED behavior:", pr_b)
+            missing += 1
+    print("Missing count:", missing)
+
+    # --- Behavior metric (nMAE) ---
+    beh = compute_nmae_from_behavior_files(
+        dataset_root=dataset_root,
+        predictions_root=predictions_root,
+        group=group,
+    )
+
+    if beh.get("has_behavior", True) is False or beh.get("nMAE", None) is None:
+        print("Behavior missing -> nMAE not computed (PTBS = HOTA@0.50)")
+        print(f"PTBS: {hota_05:.6f}")
+    else:
+        print(f"MAE:  {beh['MAE']:.6f}")
+        print(f"nMAE: {beh['nMAE']:.6f}")
+        print(f"PTBS: {(hota_05 + beh['nMAE']):.6f}")
+
+
+if __name__ == "__main__":
+    simulate_and_eval_hota05(
+        dataset_root="lecture_example_from_training/test_set/videos",
+        predictions_root="lecture_example_from_training/Predictions_folder",
+        group="01",
+        fps=200.0,
+        split="test",
+        show_window=True,
+    )
+
+
+================================================
+FILE: src/Dataset/clean_gt.py
+================================================
+import os
+import configparser
+import shutil
+from config import *
+
+def clean_gt_for_soccer():
+    # Percorso ai tuoi dati di test (o train se stai facendo prove)
+    base_paths = [DATASET_TR23_TEST, DATASET_TR23_TRAIN]
+    
+    # Classi che consideriamo "TARGET" da tracciare
+    # In base al PDF, il task ÃƒÂ¨ "Player tracking". 
+    # Solitamente include portieri. Gli arbitri a volte sono esclusi o inclusi.
+    # Se il gameinfo distingue "referee", decidi tu se tenerlo. 
+    # Qui sotto tengo players, goalkeepers e referee.
+    valid_keywords = ['player', 'goalkeeper', 'referee'] 
+
+    
+    for base_path in base_paths:
+        if not os.path.exists(base_path):
+            print(f"Errore: {base_path} non trovato.")
+            return
+        
+        for seq_name in os.listdir(base_path):
+            seq_path = os.path.join(base_path, seq_name)
+            gameinfo_path = os.path.join(seq_path, 'gameinfo.ini')
+            gt_folder = os.path.join(seq_path, 'gt')
+            gt_path = os.path.join(gt_folder, 'gt.txt')
+            
+            # Facciamo un backup del gt originale se non esiste
+            gt_backup = os.path.join(gt_folder, 'gt_backup.txt')
+
+            if os.path.exists(gameinfo_path) and os.path.exists(gt_path):
+                if not os.path.exists(gt_backup):
+                    shutil.copy(gt_path, gt_backup)
+                
+                # Leggiamo gli ID da rimuovere (es. la palla)
+                config = configparser.ConfigParser()
+                config.read(gameinfo_path)
+                
+                ids_to_keep = []
+                if 'Sequence' in config:
+                    for key, value in config['Sequence'].items():
+                        if key.startswith('trackletid_'):
+                            # Se la descrizione contiene player/goalkeeper/referee, teniamo l'ID
+                            if any(k in value.lower() for k in valid_keywords):
+                                try:
+                                    # trackletID_20 -> prendiamo 20
+                                    obj_id = int(key.split('_')[1])
+                                    ids_to_keep.append(obj_id)
+                                except:
+                                    pass
+
+                # Riscriviamo il GT pulito
+                with open(gt_backup, 'r') as f_in, open(gt_path, 'w') as f_out:
+                    for line in f_in:
+                        parts = line.strip().split(',')
+                        # Formato GT: frame, ID, x, y, w, h, conf, class, vis
+                        if len(parts) < 6: continue
+                        
+                        obj_id = int(parts[1])
+                        
+                        if obj_id in ids_to_keep:
+                            # TRUCCO TECNICO:
+                            # Assicuriamoci che ci siano 10 colonne (standard MOT)
+                            # E impostiamo la colonna 8 (classe) a 1 ("pedestrian" per TrackEval)
+                            # Anche se sono calciatori, TrackEval vuole vedere "1" lÃƒÂ¬.
+                            
+                            # Recuperiamo i dati essenziali
+                            frame = parts[0]
+                            pid = parts[1]
+                            x, y, w, h = parts[2:6]
+                            
+                            # Creiamo la riga perfetta per TrackEval:
+                            # conf=1, class=1, visibility=1
+                            new_line = f"{frame},{pid},{x},{y},{w},{h},1,1,1\n"
+                            f_out.write(new_line)
+                
+                print(f"Pulito GT per sequenza: {seq_name}")
+
+if __name__ == "__main__":
+    clean_gt_for_soccer()
+
+
+================================================
+FILE: src/Dataset/convert_to_yolo.py
+================================================
+# =================================================
+# FILE: src/Dataset/convert_to_yolo.py
+# =================================================
+import os
+import shutil
+import sys
+import cv2
+from pathlib import Path
+from tqdm import tqdm
+
+# Aggiungiamo la root al path per importare config
+ROOT_DIR = Path(__file__).parent.parent.parent.resolve()
+sys.path.append(str(ROOT_DIR))
+
+
+# Definiamo il tasso di campionamento (1 frame ogni 25)
+TRAIN_SUBSAMPLE_RATE = 10
+
+# Importiamo le costanti definite in config
+from config import DATASET_TR23_TRAIN, YOLO_DATASET_PATH, SPLIT_DIR
+
+def convert_dataset_from_manifest():
+    print("--- Inizio Conversione Dataset (Manifest Mode) ---")
+    
+    # 1. Verifica esistenza file manifest
+    train_manifest = SPLIT_DIR / "train.txt"
+    val_manifest = SPLIT_DIR / "val.txt"
+    
+    if not train_manifest.exists() or not val_manifest.exists():
+        print(f"[ERRORE] File manifest non trovati in {SPLIT_DIR}")
+        print("Esegui prima 'src/Dataset/create_splits.py' per generare le liste!")
+        return
+
+    # 2. Leggi le liste delle sequenze
+    with open(train_manifest, 'r') as f:
+        train_seqs = [line.strip() for line in f if line.strip()]
+        
+    with open(val_manifest, 'r') as f:
+        val_seqs = [line.strip() for line in f if line.strip()]
+        
+    print(f"Sequenze caricate -> Train: {len(train_seqs)}, Val: {len(val_seqs)}")
+
+    # 3. Pulisci e Prepara le cartelle di destinazione (train/val)
+    # Nota: Non cancelliamo SPLIT_DIR perchÃƒÂ© ÃƒÂ¨ dentro YOLO_DATASET_PATH
+    images_dir = YOLO_DATASET_PATH / "images"
+    labels_dir = YOLO_DATASET_PATH / "labels"
+    
+    if images_dir.exists(): shutil.rmtree(images_dir)
+    if labels_dir.exists(): shutil.rmtree(labels_dir)
+    
+    for split in ['train', 'val']:
+        (images_dir / split).mkdir(parents=True, exist_ok=True)
+        (labels_dir / split).mkdir(parents=True, exist_ok=True)
+
+    # ------------------------------------------------------------------
+    # Funzione interna per processare una lista di sequenze
+    # ------------------------------------------------------------------
+    def process_split(seq_list, split_name):
+        dest_img_dir = images_dir / split_name
+        dest_lbl_dir = labels_dir / split_name
+        
+        print(f"Elaborazione split: {split_name}...")
+        
+        for seq_name in tqdm(seq_list):
+            seq_path = DATASET_TR23_TRAIN / seq_name
+            gt_path = seq_path / "gt" / "gt.txt"
+            img_source_dir = seq_path / "img1"
+            
+            # Controllo integritÃƒÂ 
+            if not seq_path.exists():
+                print(f"[WARN] La sequenza '{seq_name}' ÃƒÂ¨ nel manifest ma non sul disco. Saltata.")
+                continue
+            if not gt_path.exists():
+                # Alcune sequenze potrebbero non avere GT (raro nel train set), saltiamo
+                continue
+
+            # A. Otteniamo dimensioni immagine (necessario per normalizzare YOLO)
+            # Leggiamo la prima immagine disponibile
+            first_img = next(img_source_dir.glob("*.jpg"), None)
+            if first_img is None:
+                continue
+                
+            img_cv = cv2.imread(str(first_img))
+            if img_cv is None: continue
+            img_h, img_w, _ = img_cv.shape
+
+            # B. Leggiamo e Parsiamo il GT (Ground Truth)
+            # Formato MOT: frame, id, x_top, y_top, w, h, ...
+            frames_data = {}
+            with open(gt_path, 'r') as f:
+                for line in f:
+                    parts = line.strip().split(',')
+                    if len(parts) < 6: continue
+                    
+                    frame_id = int(parts[0])
+                    x_top, y_top, w_box, h_box = float(parts[2]), float(parts[3]), float(parts[4]), float(parts[5])
+                    
+                    # C. Convertiamo in formato YOLO (Normalizzato 0-1 e Centro)
+                    # Class ID 0 = player
+                    x_center = (x_top + w_box / 2) / img_w
+                    y_center = (y_top + h_box / 2) / img_h
+                    w_norm = w_box / img_w
+                    h_norm = h_box / img_h
+                    
+                    # Clipping per sicurezza (valori devono stare tra 0 e 1)
+                    x_center = max(0, min(1, x_center))
+                    y_center = max(0, min(1, y_center))
+                    w_norm = max(0, min(1, w_norm))
+                    h_norm = max(0, min(1, h_norm))
+                    
+                    if frame_id not in frames_data:
+                        frames_data[frame_id] = []
+                    
+                    # Stringa YOLO: class x_c y_c w h
+                    frames_data[frame_id].append(f"0 {x_center:.6f} {y_center:.6f} {w_norm:.6f} {h_norm:.6f}")
+
+            # D. Copiamo le immagini e creiamo i file label
+            for img_file in img_source_dir.glob("*.jpg"):
+                frame_idx = int(img_file.stem) # es. '000001' -> 1
+
+                if split_name == 'train':
+                    # Esempio: tiene frame 1, 11, 21... (se il resto della div ÃƒÂ¨ 1)
+                    # Oppure frame 10, 20, 30... (se resto ÃƒÂ¨ 0). 
+                    # Usiamo (frame_idx - 1) % RATE == 0 per prendere il primo frame sicuro.
+                    if (frame_idx - 1) % TRAIN_SUBSAMPLE_RATE != 0:
+                        continue 
+                
+                # Nome univoco: SequenceName_ImageName.jpg
+                new_filename = f"{seq_name}_{img_file.name}"
+                
+                # Copia immagine
+                shutil.copy(img_file, dest_img_dir / new_filename)
+                
+                # Crea file label (.txt)
+                label_filename = f"{seq_name}_{img_file.stem}.txt"
+                label_path = dest_lbl_dir / label_filename
+                
+                content = frames_data.get(frame_idx, [])
+                
+                with open(label_path, 'w') as lf:
+                    if content:
+                        lf.write("\n".join(content))
+                    else:
+                        # File vuoto = nessuna detection in questo frame (Background image)
+                        # YOLO lo usa per capire dove NON c'ÃƒÂ¨ nulla
+                        pass 
+
+    # 4. Eseguiamo la conversione per entrambi gli split
+    process_split(train_seqs, 'train')
+    process_split(val_seqs, 'val')
+
+    # 5. Creazione dataset.yaml per Ultralytics
+    # Usiamo path assoluti o relativi al file yaml
+    yaml_content = f"""
+path: {YOLO_DATASET_PATH.as_posix()}
+train: images/train
+val: images/val
+names:
+  0: player
+"""
+    yaml_path = YOLO_DATASET_PATH / "dataset.yaml"
+    with open(yaml_path, 'w') as f:
+        f.write(yaml_content)
+
+    print("------------------------------------------------")
+    print("Conversione Completata!")
+    print(f"Dataset YOLO pronto in: {YOLO_DATASET_PATH}")
+    print(f"File configurazione: {yaml_path}")
+    print("------------------------------------------------")
+
+if __name__ == "__main__":
+    convert_dataset_from_manifest()
+
+
+================================================
+FILE: src/Dataset/create_smart_splits.py
+================================================
+# =================================================
+# FILE: src/Dataset/create_smart_splits.py
+# =================================================
+import os
+import random
+import sys
+import numpy as np
+import torch
+import torch.nn as nn
+from torchvision import models, transforms
+from PIL import Image
+from pathlib import Path
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+from collections import defaultdict
+from tqdm import tqdm
+
+# Setup path
+ROOT_DIR = Path(__file__).parent.parent.parent.resolve()
+sys.path.append(str(ROOT_DIR))
+from config import DATASET_TR23_TRAIN, SPLIT_DIR, OUTPUT_DIR
+from src.utils.get_best_device import get_best_device
+
+# Parametri
+VAL_RATIO = 0.2
+SEED = 42
+FRAMES_PER_SEQ = 3  
+MIN_CLUSTERS = 2
+MAX_CLUSTERS = 10   
+
+def extract_features(dataset_path):
+    device = get_best_device()
+    print(f"Caricamento modello ResNet18 su {device}...")
+    
+    model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
+    model = nn.Sequential(*list(model.children())[:-1]) 
+    model.to(device)
+    model.eval()
+    
+    preprocess = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+
+    features_dict = {} # Mappa seq_name -> feature_vector
+    
+    seq_dirs = sorted([s for s in os.listdir(dataset_path) if (dataset_path / s).is_dir()])
+    
+    print(f"Estrazione feature da {len(seq_dirs)} sequenze...")
+    
+    with torch.no_grad():
+        for seq in tqdm(seq_dirs):
+            img_dir = dataset_path / seq / "img1"
+            all_images = sorted(list(img_dir.glob("*.jpg")))
+            
+            if not all_images: continue
+            
+            indices = np.linspace(0, len(all_images) - 1, FRAMES_PER_SEQ, dtype=int)
+            selected_imgs = [all_images[i] for i in indices]
+            
+            seq_feats = []
+            for img_path in selected_imgs:
+                try:
+                    img = Image.open(img_path).convert('RGB')
+                    img_t = preprocess(img).unsqueeze(0).to(device)
+                    emb = model(img_t).flatten().cpu().numpy()
+                    seq_feats.append(emb)
+                except Exception:
+                    pass
+
+            if seq_feats:
+                avg_feat = np.mean(seq_feats, axis=0)
+                features_dict[seq] = avg_feat
+
+    return features_dict
+
+def find_best_k(features, min_k=2, max_k=10):
+    print("\n--- Ricerca Automatica K (Clustering) ---")
+    best_k = min_k
+    best_score = -1
+    best_labels = None
+    
+    limit_k = min(len(features), max_k)
+    if len(features) < 2: return 1, np.zeros(len(features))
+
+    for k in range(min_k, limit_k + 1):
+        kmeans = KMeans(n_clusters=k, random_state=SEED, n_init=10)
+        labels = kmeans.fit_predict(features)
+        score = silhouette_score(features, labels)
+        if score > best_score:
+            best_score = score
+            best_k = k
+            best_labels = labels
+            
+    print(f"--> Miglior K trovato: {best_k} (Silhouette Score: {best_score:.4f})")
+    return best_k, best_labels
+
+def visualize_split_quality(features_dict, train_seqs, val_seqs):
+    """
+    Genera un grafico 2D per mostrare quanto Train e Val si sovrappongono.
+    """
+    print("\nGenerazione grafico di qualitÃƒÂ  dello split...")
+    
+    all_seqs = train_seqs + val_seqs
+    X = np.array([features_dict[s] for s in all_seqs])
+    
+    # Riduciamo a 2 dimensioni con PCA per poter disegnare
+    pca = PCA(n_components=2)
+    X_pca = pca.fit_transform(X)
+    
+    # Creiamo due liste di coordinate
+    train_indices = [i for i, s in enumerate(all_seqs) if s in train_seqs]
+    val_indices = [i for i, s in enumerate(all_seqs) if s in val_seqs]
+    
+    plt.figure(figsize=(10, 8))
+    
+    # Disegna Train (Blu)
+    plt.scatter(X_pca[train_indices, 0], X_pca[train_indices, 1], 
+                c='blue', alpha=0.5, label='Train Set', s=50)
+    
+    # Disegna Val (Rosso)
+    plt.scatter(X_pca[val_indices, 0], X_pca[val_indices, 1], 
+                c='red', marker='x', alpha=0.9, label='Val Set', s=70)
+    
+    plt.title(f"Distribuzione Train vs Val (PCA)\nObiettivo: I punti rossi devono essere ben distribuiti tra i blu")
+    plt.xlabel("Principal Component 1")
+    plt.ylabel("Principal Component 2")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    
+    output_plot = OUTPUT_DIR / "split_quality_check.png"
+    if not OUTPUT_DIR.exists(): OUTPUT_DIR.mkdir(parents=True)
+    
+    plt.savefig(output_plot)
+    print(f"--> Grafico salvato in: {output_plot}")
+    print("    APRILO! Se i punti rossi coprono bene l'area dei blu, lo split ÃƒÂ¨ ottimo.")
+
+def create_smart_splits():
+    if not DATASET_TR23_TRAIN.exists():
+        print(f"Dataset non trovato in {DATASET_TR23_TRAIN}")
+        return
+
+    # 1. Estrazione Features
+    features_map = extract_features(DATASET_TR23_TRAIN)
+    sequences = sorted(list(features_map.keys()))
+    features_matrix = np.array([features_map[s] for s in sequences])
+    
+    if len(sequences) == 0: return
+
+    # 2. Clustering
+    n_clusters, clusters = find_best_k(features_matrix, MIN_CLUSTERS, MAX_CLUSTERS)
+    
+    clustered_seqs = defaultdict(list)
+    for seq, cluster_id in zip(sequences, clusters):
+        clustered_seqs[cluster_id].append(seq)
+        
+    # 3. Stratified Split
+    train_final = []
+    val_final = []
+    
+    print("\n--- Generazione Split ---")
+    for cid in sorted(clustered_seqs.keys()):
+        seqs_in_cluster = clustered_seqs[cid]
+        random.seed(SEED)
+        random.shuffle(seqs_in_cluster)
+        
+        n_val = int(len(seqs_in_cluster) * VAL_RATIO)
+        if n_val == 0 and len(seqs_in_cluster) > 1: n_val = 1
+            
+        val_subset = seqs_in_cluster[:n_val]
+        train_subset = seqs_in_cluster[n_val:]
+        
+        val_final.extend(val_subset)
+        train_final.extend(train_subset)
+        print(f"Cluster {cid}: {len(train_subset)} Train, {len(val_subset)} Val")
+
+    # 4. Salva i file
+    SPLIT_DIR.mkdir(parents=True, exist_ok=True)
+    with open(SPLIT_DIR / "train.txt", "w") as f: f.write("\n".join(sorted(train_final)))
+    with open(SPLIT_DIR / "val.txt", "w") as f: f.write("\n".join(sorted(val_final)))
+    
+    # 5. VERIFICA VISIVA (Nuovo!)
+    visualize_split_quality(features_map, train_final, val_final)
+
+if __name__ == "__main__":
+    create_smart_splits()
+
+
+================================================
+FILE: src/Dataset/create_splits.py
+================================================
+# =================================================
+# FILE: src/Dataset/create_splits.py
+# =================================================
+import os
+import random
+from config import DATASET_TR23_TRAIN, SPLIT_DIR
+
+# --- PARAMETRI NUOVI (Da mettere in config.py se vuoi, o lasciare qui) ---
+VAL_RATIO = 0.2  # Percentuale di dati da usare per la validazione (20%)
+SEED = 42        # Numero magico per la riproducibilitÃƒÂ 
+# -------------------------------------------------------------------------
+
+def generate_manifests():
+    print(f"Generazione manifest partendo da: {DATASET_TR23_TRAIN}")
+    
+    if not DATASET_TR23_TRAIN.exists():
+        print(f"ERRORE: La cartella dataset {DATASET_TR23_TRAIN} non esiste.")
+        return
+
+    # 1. Leggi tutte le cartelle (sequenze)
+    sequences = [s for s in os.listdir(DATASET_TR23_TRAIN) if (DATASET_TR23_TRAIN / s).is_dir()]
+    
+    # 2. Ordina la lista (FONDAMENTALE per avere coerenza tra sistemi diversi)
+    sequences = sorted(sequences)
+    
+    # 3. Mescola in modo deterministico
+    random.seed(SEED)
+    random.shuffle(sequences)
+    
+    # 4. Calcola il punto di taglio
+    split_idx = int(len(sequences) * (1 - VAL_RATIO))
+    train_seqs = sequences[:split_idx]
+    val_seqs = sequences[split_idx:]
+    
+    # 5. Prepara cartella output
+    SPLIT_DIR.mkdir(parents=True, exist_ok=True)
+    
+    # 6. Scrivi i file
+    train_file = SPLIT_DIR / "train.txt"
+    val_file = SPLIT_DIR / "val.txt"
+    
+    with open(train_file, "w") as f:
+        f.write("\n".join(train_seqs))
+        
+    with open(val_file, "w") as f:
+        f.write("\n".join(val_seqs))
+        
+    print("------------------------------------------------")
+    print(f"Manifest creati con successo in: {SPLIT_DIR}")
+    print(f"Train sequences ({len(train_seqs)}): salvate in train.txt")
+    print(f"Val sequences   ({len(val_seqs)}): salvate in val.txt")
+    print("------------------------------------------------")
+
+if __name__ == "__main__":
+    generate_manifests()
+
+
+================================================
+FILE: src/Dataset/download_dataset.py
+================================================
+from SoccerNet.Downloader import SoccerNetDownloader
+
+def donwnload_tracking_2023():
+    mySoccerNetDownloader = SoccerNetDownloader(LocalDirectory="./dataset")
+    mySoccerNetDownloader.downloadDataTask(task="tracking-2023", split=["train", "test", "challenge"])
+
+if __name__ == "__main__":
+    donwnload_tracking_2023()
+
+
+================================================
+FILE: src/Detector/grounding_DINO/inference.py
+================================================
+import os
+import sys
+import shutil
+import torch
+import warnings
+from PIL import Image
+from transformers import AutoProcessor, AutoModelForZeroShotObjectDetection
+from pathlib import Path
+
+# --- SETUP PATH ---
+current_file = Path(__file__).resolve()
+project_root = current_file.parent.parent.parent.parent
+sys.path.append(str(project_root))
+
+warnings.filterwarnings("ignore", category=UserWarning, module="torchvision")
+
+try:
+    from config import *
+except ImportError:
+    print("ERRORE CRITICO: Non riesco a trovare 'config.py'.")
+    sys.exit(1)
+
+def run_grounding_dino_detection():
+    # Setup del modello
+    model_id = "IDEA-Research/grounding-dino-base"
+    
+    if torch.backends.mps.is_available():
+        device = 'mps'
+        print("Uso accelerazione Apple Silicon (MPS)")
+    elif torch.cuda.is_available():
+        device = 'cuda'
+        print("Uso accelerazione CUDA")
+    else:
+        device = 'cpu'
+        print("Uso CPU (Lento)")
+
+    print(f"Caricamento Grounding DINO ({model_id})...")
+    
+    processor = AutoProcessor.from_pretrained(model_id)
+    model = AutoModelForZeroShotObjectDetection.from_pretrained(model_id).to(device)
+
+    TEXT_PROMPT = "person."  
+    BOX_THRESHOLD = 0.35   
+    TEXT_THRESHOLD = 0.25  
+
+    base_path = os.path.join(DATASET_TR23_TEST, "test")
+    output_folder = Path(DETECTOR_OUTPUT_DIR) / "grounding_dino_base"
+    
+    print(f"\n--- DEBUG PATH ---")
+    print(f"Path Dataset: {base_path}")
+    print(f"Path Output:  {output_folder}")
+    
+    if not os.path.exists(base_path):
+        print(f"ERRORE: La cartella del dataset NON esiste: {base_path}")
+        return
+
+    sequences = os.listdir(base_path)
+    print(f"Ho trovato {len(sequences)} elementi nella cartella del dataset.")
+
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    files_created = 0
+
+    for seq_name in sequences:
+        seq_path = os.path.join(base_path, seq_name)
+        img_source = os.path.join(seq_path, 'img1')
+
+        if not os.path.isdir(seq_path): continue
+        if not os.path.exists(img_source):
+            print(f"  -> SALTATA {seq_name}: Manca cartella img1")
+            continue
+        
+        # Filtra solo immagini vere
+        image_files = sorted([f for f in os.listdir(img_source) if f.lower().endswith(('.jpg', '.jpeg', '.png'))])
+        num_imgs = len(image_files)
+        
+        if num_imgs == 0:
+            print(f"  -> SALTATA {seq_name}: Cartella vuota")
+            continue
+
+        print(f"\nAnalisi sequenza: {seq_name} ({num_imgs} immagini)")
+        
+        res_file_path = os.path.join(output_folder, f"{seq_name}.txt")
+        
+        with open(res_file_path, 'w') as f:
+            lines_written = 0
+            
+            for i, img_name in enumerate(image_files):
+                if i % 10 == 0: 
+                    print(f"     Elaborazione frame {i}/{num_imgs}...", end='\r')
+
+                img_path = os.path.join(img_source, img_name)
+                
+                try:
+                    frame_id = int(img_name.split('.')[0])
+                except ValueError:
+                    continue 
+
+                try:
+                    image_pil = Image.open(img_path).convert("RGB")
+                    
+                    inputs = processor(images=image_pil, text=TEXT_PROMPT, return_tensors="pt").to(device)
+                    
+                    with torch.no_grad():
+                        outputs = model(**inputs)
+
+                    width, height = image_pil.size
+                    
+                    results = processor.post_process_grounded_object_detection(
+                        outputs,
+                        inputs.input_ids,
+                        target_sizes=[(height, width)]
+                    )[0]
+
+                    for score, label, box in zip(results["scores"], results["labels"], results["boxes"]):
+                        
+                        if score.item() < BOX_THRESHOLD:
+                            continue
+                        
+                        if "person" in label:
+                            x1, y1, x2, y2 = box.cpu().numpy()
+                            w = x2 - x1
+                            h = y2 - y1
+                            conf = score.item()
+
+                            # Scrittura formato MOT
+                            # frame_id, id_obj(-1), x1, y1, w, h, conf, -1, -1, -1
+                            line = f"{frame_id},-1,{x1:.2f},{y1:.2f},{w:.2f},{h:.2f},{conf:.4f},-1,1,-1\n"
+                            f.write(line)
+                            lines_written += 1
+                            
+                except Exception as e:
+                    print(f"\nErrore nel frame {img_name}: {e}")
+                    continue
+
+            print(f"     COMPLETATO! Scritte {lines_written} righe.        ")
+            files_created += 1
+
+    print(f"\n--- FINE ---")
+    print(f"File salvati in: {output_folder}")
+
+if __name__ == "__main__":
+    run_grounding_dino_detection()
+
+
+================================================
+FILE: src/Detector/YOLO/freezing_train.py
+================================================
+# src/Detector/YOLO/train_tuned.py
+from ultralytics import YOLO
+from ultralytics.utils import metrics
+from pathlib import Path
+import sys
+
+# Setup path
+ROOT_DIR = Path(__file__).parent.parent.parent.parent.resolve()
+sys.path.append(str(ROOT_DIR))
+from config import *
+
+def custom_fitness(x):
+    """
+    x = [P, R, mAP@50, mAP@50-95]
+    Di default YOLO usa: 0.1 * mAP@50 + 0.9 * mAP@50-95
+    Noi usiamo: 1.0 * mAP@50 + 0.0 * mAP@50-95
+    """
+    return x[2] # Restituisce solo mAP@50
+
+# Sovrascriviamo la funzione della libreria
+metrics.fitness = custom_fitness
+
+def train_yolo_tuned():
+    dataset_yaml = YOLO_DATASET_PATH / "dataset.yaml"
+    
+    model_name = 'yolo12m.pt' 
+    model = YOLO(MODEL_PATH / model_name) 
+
+    print(f"Avvio Training Tuned (Loss Custom) di {model_name}...")
+    
+    results = model.train(
+        data=str(dataset_yaml),
+        epochs=50,
+        imgsz=1024,
+        batch=8,
+        
+        # --- TUNING DEI PESI DELLA LOSS (Il tuo tocco magico) ---
+        box=7.5,    # (Default): Allows slightly looser boxes, increases recall
+        cls=1.5,    # INCREASED: Penalize missing players (FN) heavily
+        dfl=1.5,    # SLIGHTLY REDUCED: We don't need pixel-perfect distribution
+
+        # --- Augmentation to help small objects ---
+        scale=0.8,  # Allow significant zooming in during training
+        degrees=0.0,
+            
+        # --- Altri parametri di stabilitÃƒÂ  ---
+        optimizer='AdamW',
+        lr0=0.0005, 
+        freeze=10,  # Congeliamo il backbone per stabilitÃƒÂ 
+        
+        project=str(MODEL_PATH / "training_runs"),
+        name='soccernet_high_precision',
+        exist_ok=True,
+        plots=True,
+        device=0,
+        workers=4
+    )
+    print("Training completato.")
+    
+
+if __name__ == "__main__":
+    train_yolo_tuned()
+
+
+================================================
+FILE: src/Detector/YOLO/inference.py
+================================================
+import os
+from ultralytics import YOLO
+import torch
+from config import *
+import shutil
+import sys
+from src.utils.get_best_device import get_best_device
+
+def run_detection_and_save_txt():
+    # Carica il modello
+    DEVICE = get_best_device()
+    model_name = 'best.pt'  # Puoi cambiare con il percorso del tuo modello
+    model = YOLO(MODEL_PATH / "training_runs" / "soccernet_high_precision" / "weights" / model_name) 
+    model.to(DEVICE)
+    print(f"Modello caricato su: {model.device}")
+
+    base_path = DATASET_TR23_TEST
+    output_folder = DETECTOR_OUTPUT_DIR / model_name.split(".")[0] # Cartella dove salveremo i txt per TrackEval
+    
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    else:
+        # Se la cartella esiste giÃƒÂ , controlliamo se ÃƒÂ¨ vuota
+        if len(os.listdir(output_folder)) > 0:
+            print(f"\nATTENZIONE: La cartella di output '{output_folder}' contiene giÃƒÂ  dei file.")
+            conferma = input("Vuoi eliminare TUTTI i file presenti e continuare? (y/n): ").strip().lower()
+
+            if conferma in ['s', 'si', 'y', 'yes']:
+                print("Eliminazione dei file in corso...")
+                for filename in os.listdir(output_folder):
+                    file_path = os.path.join(output_folder, filename)
+                    try:
+                        if os.path.isfile(file_path) or os.path.islink(file_path):
+                            os.unlink(file_path) # Elimina file o link simbolici
+                        elif os.path.isdir(file_path):
+                            shutil.rmtree(file_path) # Elimina sottocartelle
+                    except Exception as e:
+                        print(f"Impossibile eliminare {file_path}. Motivo: {e}")
+                print("Cartella svuotata con successo.\n")
+            else:
+                print("Operazione annullata. Esecuzione interrotta.")
+                sys.exit() # Esce dallo script
+
+
+    if not os.path.exists(base_path):
+        print(f"Errore: Percorso {base_path} non trovato.")
+        return
+
+    sequences = os.listdir(base_path)
+
+    for seq_name in sequences:
+        seq_path = os.path.join(base_path, seq_name)
+        img_source = os.path.join(seq_path, 'img1')
+
+        if os.path.isdir(seq_path) and os.path.exists(img_source):
+            print(f"--> Elaborazione sequenza: {seq_name}")
+            
+            # File di output per questa sequenza
+            res_file_path = os.path.join(output_folder, f"{seq_name}.txt")
+            
+            # Eseguiamo l'inferenza usando lo stream per non saturare la RAM
+            # stream=True restituisce un generatore
+            results = model.predict(source=img_source, conf=0.35, imgsz=1280, verbose=False, stream=True, device=0, classes=[0])
+            
+            with open(res_file_path, 'w') as f:
+                for result in results:
+                    # Otteniamo il numero del frame dal percorso del file
+                    # Es: '.../000001.jpg' -> frame_id = 1
+                    path = result.path
+                    frame_id = int(os.path.basename(path).split('.')[0])
+                    
+                    # I box sono in formato xywh (x_center, y_center, width, height) o xyxy
+                    # Per MOT serve: Top-Left X, Top-Left Y, Width, Height
+                    boxes = result.boxes.cpu().numpy()
+                    
+                    for box in boxes:
+                        # Estrai coordinate xywh (top-left)
+                        # box.xywh restituisce centro; box.xyxy restituisce angoli.
+                        # box.xywhn normalizzato. 
+                        # Ultralytics ha xywh come (center_x, center_y, w, h).
+                        # Noi vogliamo (top_left_x, top_left_y, w, h).
+                        
+                        x1, y1, x2, y2 = box.xyxy[0]
+                        w = x2 - x1
+                        h = y2 - y1
+                        conf = box.conf[0]
+                        cls = box.cls[0]
+
+                        # FILTRO: Assicuriamoci di salvare solo la classe "persona" (id 0 in COCO)
+                        if int(cls) == 0: 
+                            # Scriviamo nel formato MOT:
+                            # frame, id, x, y, w, h, conf, -1, -1, -1
+                            # Dato che ÃƒÂ¨ detection pura, ID mettiamo -1 o 1, non importa per DetA
+                            line = f"{frame_id},-1,{x1:.2f},{y1:.2f},{w:.2f},{h:.2f},{conf:.4f},-1,1,-1\n"
+                            f.write(line)
+            
+            print(f"Salvati risultati in: {res_file_path}")
+
+            with open(SEQMAP_FILE, 'a') as seqmap_file:
+                seqmap_file.write(f"{seq_name}\n")
+
+if __name__ == "__main__":
+    run_detection_and_save_txt()
+
+
+================================================
+FILE: src/Detector/YOLO/resume.py
+================================================
+from ultralytics import YOLO
+from config import MODEL_PATH
+from utils.get_best_device import get_best_device
+
+# Il blocco if __name__ == '__main__': ÃƒÂ¨ OBBLIGATORIO su Windows
+if __name__ == '__main__':
+    # Carica il peso 'last.pt' invece di 'yolov8n.pt'
+    model = YOLO(MODEL_PATH / "training_runs" / "soccernet_finetune" / "weights" / "last.pt")
+    model.to(get_best_device())
+    
+    # Il parametro resume=True ÃƒÂ¨ fondamentale
+    results = model.train(resume=True)
+
+
+================================================
+FILE: src/Detector/YOLO/train.py
+================================================
+# src/Detector/YOLO/train.py
+from ultralytics import YOLO
+from pathlib import Path
+import sys
+
+# Aggiungi root al path per importare config
+ROOT_DIR = Path(__file__).parent.parent.parent.parent.resolve()
+sys.path.append(str(ROOT_DIR))
+from config import *
+
+def train_yolo():
+    # Percorso del dataset convertito (generato dallo script precedente)
+    dataset_yaml = YOLO_DATASET_PATH / "dataset.yaml"
+    
+    if not dataset_yaml.exists():
+        print("Errore: Dataset YAML non trovato. Esegui prima convert_to_yolo.py")
+        return
+
+    # Carica modello pre-addestrato (es. yolov8m.pt o quello che usi)
+    # Nota: Assicurati che il nome del modello sia corretto (yolo12m non esiste ufficialmente, forse intendi v8 o v11?)
+    model_name = 'yolo12m.pt' 
+    model = YOLO(MODEL_PATH / model_name) 
+
+    print(f"Avvio training di {model_name}...")
+    
+    # Parametri training
+    results = model.train(
+        data=str(dataset_yaml),
+        epochs=50,             # Regola in base al tempo (50-100 ÃƒÂ¨ buono)
+        imgsz=640,             # O 1280 se hai GPU potente e vuoi vedere i piccoli dettagli
+        batch=8,              # Regola in base alla VRAM
+        project=str(MODEL_PATH / "training_runs"),
+        name='soccernet_finetune',
+        exist_ok=True,
+        device=0,              # GPU id
+        plots=True,
+        patience=10,            # Early stopping se non migliora per 10 epoche
+        cache=False,
+        workers=4
+    )
+    
+    print("Training completato.")
+    # Il modello migliore sarÃƒÂ  salvato in models/training_runs/soccernet_finetune/weights/best.pt
+
+if __name__ == "__main__":
+    train_yolo()
+
+
+================================================
+FILE: src/Eval/run_eval.py
+================================================
+import sys
+import os
+import numpy as np
+from trackeval.datasets import MotChallenge2DBox
+from trackeval.metrics import HOTA
+import trackeval
+from config import *
+
+def run_evaluation():
+    # --- CONFIGURAZIONE PATH ---
+    # GT_FOLDER deve puntare alla cartella che CONTIENE le sequenze (SNMOT-XXX)
+    gt_folder_abs = DATASET_TR23_TEST 
+    trackers_folder_abs = TRACKER_OUTPUT_DIR 
+    seqmap_folder_abs = SEQMAP_DIR 
+    
+    print(f"Cercando GT in: {gt_folder_abs}") 
+    print(f"Cercando Seqmap in: {seqmap_folder_abs}")
+
+    # Verifica veloce
+    if not os.path.exists(os.path.join(gt_folder_abs, 'SNMOT-116', 'seqinfo.ini')):
+        print("ATTENZIONE: seqinfo.ini non trovato nemmeno nel path assoluto per 116!")
+
+    eval_config = {
+        'USE_PARALLEL': False,
+        'NUM_PARALLEL_CORES': 1,
+        'PRINT_RESULTS': False, # Mettiamo False per stampare solo i nostri dati puliti
+        'PRINT_ONLY_COMBINED': False,
+        'OUTPUT_SUMMARY': True,
+        'OUTPUT_EMPTY_CLASSES': False,
+        'OUTPUT_DETAILED': False,
+        'PLOT_CURVES': False,
+    }
+
+    dataset_config = {
+        'GT_FOLDER': gt_folder_abs, 
+        'TRACKERS_FOLDER': trackers_folder_abs,
+        'OUTPUT_FOLDER': None,
+        'TRACKERS_TO_EVAL': None, 
+        'CLASSES_TO_EVAL': ['pedestrian'], 
+        'BENCHMARK': 'MOT17', 
+        'SPLIT_TO_EVAL': 'test',
+        'INPUT_AS_ZIP': False,
+        'PRINT_CONFIG': False,
+        'DO_PREPROC': False,
+        'TRACKER_SUB_FOLDER': '', 
+        'OUTPUT_SUB_FOLDER': '',
+        'OUTPUT_SUMMARY': True, 
+        'SKIP_SPLIT_FOL': True, 
+        'SEQ_INFO': None,
+        'SUB_FOLDER': 'gt', 
+        'SEQMAP_FOLDER': seqmap_folder_abs, 
+        'SEQMAP_FILE': SEQMAP_FILE, 
+    }
+    
+    # NOTA: Qui NON chiamiamo piÃƒÂ¹ fix_ids_for_detection_only()
+    # perchÃƒÂ© per il tracking servono gli ID originali del tuo algoritmo!
+    
+    dataset = MotChallenge2DBox(dataset_config)
+    hota = HOTA()
+    
+    evaluator = trackeval.Evaluator(eval_config)
+    try:
+        np.float = float
+        np.int = int
+    except AttributeError:
+        pass
+        
+    results = evaluator.evaluate([dataset], [hota])
+    
+    if results:
+        dataset_res = results[0]
+        dataset_name = list(dataset_res.keys())[0]
+        tracker_res = dataset_res[dataset_name]
+        tracker_name = list(tracker_res.keys())[0]
+        sequences_res = tracker_res[tracker_name]
+        
+        seq_name = 'COMBINED_SEQ'
+        if seq_name not in sequences_res:
+            seq_name = list(sequences_res.keys())[0]
+            print(f"Attenzione: 'COMBINED_SEQ' non trovato. Mostro i risultati per: {seq_name}")
+        
+        # Percorso: Dataset -> Tracker -> Sequence -> Class -> Metric
+        stats = sequences_res[seq_name]['pedestrian']['HOTA']
+        
+        # --- CORREZIONE CRUCIALE: INDICE 9 ---
+        # TrackEval calcola 19 soglie (0.05 ... 0.95).
+        # index 0 = 0.05
+        # index 9 = 0.50 (Quello che vuole la competizione)
+        idx = 9
+
+        deta_score = stats['DetA'][idx] * 100 
+        assa_score = stats['AssA'][idx] * 100
+        hota_score = stats['HOTA'][idx] * 100
+
+        print(f"\nMetriche Tracking @ IoU 0.5 ({tracker_name} - {seq_name}):")
+        print(f"HOTA: {hota_score:.2f}%  <-- QUESTO ÃƒÂ¨ il valore per la classifica")
+        print(f"DetA: {deta_score:.2f}%")
+        print(f"AssA: {assa_score:.2f}%")
+        
+        det_re = stats['DetRe'][idx] * 100
+        det_pr = stats['DetPr'][idx] * 100
+        print(f"DetRe (Recall): {det_re:.2f}%")
+        print(f"DetPr (Precision): {det_pr:.2f}%")
+
+        for metric in stats.keys():
+            value = stats[metric]
+            
+            # Controlla se il valore ÃƒÂ¨ indicizzabile (un array/lista)
+            if hasattr(value, "__getitem__") and not isinstance(value, (str, bytes)):
+                # Se idx=0 corrisponde a IoU 0.5, usa 0. 
+                # Se sei sicuro che sia l'indice 9, tieni 9.
+                try:
+                    print(f"{metric}: {value[0]}") 
+                except IndexError:
+                    print(f"{metric}: {value}") # Se l'array ÃƒÂ¨ piÃƒÂ¹ corto di quanto previsto
+            else:
+                # Se ÃƒÂ¨ uno scalare (come HOTA(0)), lo stampa direttamente
+                print(f"{metric}: {value}")
+            
+        
+
+if __name__ == "__main__":
+    run_evaluation()
+
+
+================================================
+FILE: src/Eval/run_eval_detection_only.py
+================================================
+import sys
+import os
+import numpy as np
+from trackeval.datasets import MotChallenge2DBox
+from trackeval.metrics import HOTA
+import trackeval
+from config import * # Assicurati che config.py sia accessibile
+
+def fix_ids_for_detection_only(trackers_folder):
+    """
+    Scansiona i file .txt dei risultati e assegna un ID univoco a ogni riga.
+    NOTA: Questo distrugge le informazioni di tracking temporale (AssA sarÃƒÂ  ~0),
+    ma ÃƒÂ¨ perfetto se ti interessa calcolare SOLO la DetA (Detection Accuracy).
+    """
+    import glob
+    
+    txt_files = glob.glob(os.path.join(trackers_folder, '**', '*.txt'), recursive=True)
+    
+    if not txt_files:
+        print(f"Nessun file .txt trovato in {trackers_folder} da correggere.")
+        return
+
+    print(f"Correzione ID per {len(txt_files)} file (Detection only mode)...")
+    
+    for txt_file in txt_files:
+        with open(txt_file, 'r') as f:
+            lines = f.readlines()
+        
+        new_lines = []
+        for i, line in enumerate(lines):
+            parts = line.strip().split(',')
+            if len(parts) < 6: continue
+            
+            # Assegna un ID progressivo unico per riga (rompe il tracking, ok per detection)
+            parts[1] = str(i + 1) 
+            
+            new_lines.append(','.join(parts) + '\n')
+            
+        with open(txt_file, 'w') as f:
+            f.writelines(new_lines)
+    
+    print("Correzione ID completata.")
+
+def run_evaluation():
+    # --- CONFIGURAZIONE PATH ---
+    gt_folder_abs = DATASET_TR23_TEST 
+    trackers_folder_abs = DETECTOR_OUTPUT_DIR 
+    seqmap_folder_abs = SEQMAP_DIR 
+    
+    print(f"GT Folder: {gt_folder_abs}") 
+    print(f"Seqmap Folder: {seqmap_folder_abs}")
+
+    # Configurazione di base per l'evaluator
+    eval_config = {
+        'USE_PARALLEL': False,
+        'NUM_PARALLEL_CORES': 1,
+        'PRINT_RESULTS': False,  # Mettiamo False per non intasare la console, stampiamo noi i dati custom
+        'PRINT_ONLY_COMBINED': False,
+        'OUTPUT_SUMMARY': True,
+        'OUTPUT_EMPTY_CLASSES': False,
+        'OUTPUT_DETAILED': False,
+        'PLOT_CURVES': True,
+    }
+
+    dataset_config = {
+        'GT_FOLDER': gt_folder_abs, 
+        'TRACKERS_FOLDER': trackers_folder_abs,
+        'OUTPUT_FOLDER': None,
+        'TRACKERS_TO_EVAL': None, 
+        'CLASSES_TO_EVAL': ['pedestrian'], 
+        'BENCHMARK': 'MOT17', 
+        'SPLIT_TO_EVAL': 'test',
+        'INPUT_AS_ZIP': False,
+        'PRINT_CONFIG': False,
+        'DO_PREPROC': False,
+        'TRACKER_SUB_FOLDER': '', 
+        'OUTPUT_SUB_FOLDER': '',
+        'OUTPUT_SUMMARY': True, 
+        'SKIP_SPLIT_FOL': True, 
+        'SEQ_INFO': None,
+        'SUB_FOLDER': 'gt', 
+        'SEQMAP_FOLDER': seqmap_folder_abs, 
+        'SEQMAP_FILE': SEQMAP_FILE, 
+    }
+
+    # Eseguiamo la correzione degli ID per calcolare la Detection pura
+    fix_ids_for_detection_only(trackers_folder_abs)
+    
+    dataset = MotChallenge2DBox(dataset_config)
+    hota = HOTA()
+    
+    evaluator = trackeval.Evaluator(eval_config)
+    
+    # Fix per compatibilitÃƒÂ  numpy
+    try:
+        np.float = float
+        np.int = int
+    except AttributeError:
+        pass
+
+    # Esecuzione
+    results = evaluator.evaluate([dataset], [hota])
+    
+    if results:
+        dataset_res = results[0]
+        dataset_name = list(dataset_res.keys())[0]
+        tracker_res = dataset_res[dataset_name]
+        tracker_name = list(tracker_res.keys())[0]
+        sequences_res = tracker_res[tracker_name]
+        
+        seq_name = 'COMBINED_SEQ'
+        if seq_name not in sequences_res:
+            seq_name = list(sequences_res.keys())[0]
+            print(f"Attenzione: COMBINED_SEQ non trovato. Uso: {seq_name}")
+        
+        # Estrazione metriche HOTA
+        stats = sequences_res[seq_name]['pedestrian']['HOTA']
+        
+        # --- MODIFICA CRUCIALE PER ESTRARRE SOLO 0.5 ---
+        # L'array 'DetA' ha 19 valori corrispondenti alle soglie:
+        # 0.05, 0.10, ..., 0.50, ..., 0.95
+        # L'indice 9 corrisponde esattamente alla soglia 0.50
+        index_05 = 9 
+        
+        # Estrazione valori specifici all'indice 9
+        deta_05 = stats['DetA'][index_05] * 100
+        det_re_05 = stats['DetRe'][index_05] * 100
+        det_pr_05 = stats['DetPr'][index_05] * 100
+        
+        # NOTA: Calcoliamo anche HOTA e AssA a 0.5, ma attenzione:
+        # PoichÃƒÂ© usi "fix_ids_for_detection_only", AssA sarÃƒÂ  bassissima (~0),
+        # e quindi anche HOTA sarÃƒÂ  bassissima. 
+        # Tuttavia, DetA sarÃƒÂ  corretta.
+        hota_05 = stats['HOTA'][index_05] * 100
+        assa_05 = stats['AssA'][index_05] * 100
+
+        print("-" * 40)
+        print(f"RISULTATI SPECIFICI PER SOGLIA IoU = 0.5 ({tracker_name})")
+        print("-" * 40)
+        print(f"DetA @ 0.5 (Detection Accuracy):  {deta_05:.2f}%")
+        print(f"DetRe @ 0.5 (Recall):             {det_re_05:.2f}%")
+        print(f"DetPr @ 0.5 (Precision):          {det_pr_05:.2f}%")
+        print("-" * 40)
+        print("Metriche di Tracking (saranno basse se hai resettato gli ID):")
+        print(f"AssA @ 0.5 (Association Acc):     {assa_05:.2f}%")
+        print(f"HOTA @ 0.5:                       {hota_05:.2f}%")
+        print("-" * 40)
+
+if __name__ == "__main__":
+    run_evaluation()
+
+
+================================================
+FILE: src/Tracker/interpolate_results.py
+================================================
+import os
+import sys
+import numpy as np
+from pathlib import Path
+from collections import defaultdict
+
+# Setup path
+current_file = Path(__file__).resolve()
+project_root = current_file.parent.parent.parent
+sys.path.append(str(project_root))
+
+from config import TRACKER_OUTPUT_DIR, OUTPUT_DIR
+
+def interpolate_tracks(max_gap=20):
+    """
+    max_gap: Numero massimo di frame mancanti da riempire. 
+             20 frame = 0.8 secondi (a 25fps). Oltre questo ÃƒÂ¨ rischioso inventare.
+    """
+    
+    # 1. Trova l'ultima cartella dei risultati
+    if not TRACKER_OUTPUT_DIR.exists():
+        print("Nessuna cartella risultati trovata.")
+        return
+
+    all_subdirs = [d for d in TRACKER_OUTPUT_DIR.iterdir() if d.is_dir()]
+    if not all_subdirs:
+        print("Nessuna sottocartella trovata.")
+        return
+        
+    latest_subdir = max(all_subdirs, key=os.path.getmtime)
+    print(f"Interpolazione sui file in: {latest_subdir.name}")
+    
+    # 2. Crea cartella di output per i file interpolati
+    interpolated_dir = TRACKER_OUTPUT_DIR / f"{latest_subdir.name}_interpolated"
+    interpolated_dir.mkdir(parents=True, exist_ok=True)
+    
+    txt_files = sorted(list(latest_subdir.glob("*.txt")))
+    
+    total_added_boxes = 0
+
+    for txt_file in txt_files:
+        seq_name = txt_file.stem
+        print(f"--> Elaborazione: {seq_name}")
+        
+        # --- LETTURA ---
+        # Struttura dati: tracks[track_id] = [ (frame, x, y, w, h, conf), ... ]
+        tracks = defaultdict(list)
+        
+        with open(txt_file, 'r') as f:
+            lines = f.readlines()
+            
+        for line in lines:
+            parts = line.strip().split(',')
+            if len(parts) < 6: continue
+            
+            frame = int(parts[0])
+            track_id = int(parts[1])
+            x = float(parts[2])
+            y = float(parts[3])
+            w = float(parts[4])
+            h = float(parts[5])
+            conf = float(parts[6])
+            
+            tracks[track_id].append((frame, x, y, w, h, conf))
+            
+        # --- INTERPOLAZIONE ---
+        new_lines = []
+        seq_added = 0
+        
+        for track_id, data in tracks.items():
+            # Ordina per frame (fondamentale)
+            data.sort(key=lambda x: x[0])
+            
+            # Aggiungi i dati originali alla lista finale
+            for d in data:
+                # MOT Format: frame, id, x, y, w, h, conf, -1, 1, -1
+                line = f"{d[0]},{track_id},{d[1]:.2f},{d[2]:.2f},{d[3]:.2f},{d[4]:.2f},{d[5]:.4f},-1,1,-1\n"
+                new_lines.append(line)
+            
+            # Cerca buchi
+            for i in range(len(data) - 1):
+                curr_frame, curr_x, curr_y, curr_w, curr_h, _ = data[i]
+                next_frame, next_x, next_y, next_w, next_h, _ = data[i+1]
+                
+                gap = next_frame - curr_frame
+                
+                # Se c'ÃƒÂ¨ un buco e non ÃƒÂ¨ troppo grande (es. giocatore uscito dal campo)
+                if 1 < gap <= max_gap:
+                    # Riempiamo i frame mancanti
+                    for step in range(1, gap):
+                        interp_frame = curr_frame + step
+                        
+                        # Interpolazione Lineare (Lerp)
+                        alpha = step / gap
+                        interp_x = curr_x + (next_x - curr_x) * alpha
+                        interp_y = curr_y + (next_y - curr_y) * alpha
+                        interp_w = curr_w + (next_w - curr_w) * alpha
+                        interp_h = curr_h + (next_h - curr_h) * alpha
+                        
+                        # Confidenza? Diamogli una media o un valore fisso basso
+                        # (Non importa molto per TrackEval se non si usano soglie strane)
+                        interp_conf = 0.5 
+                        
+                        line = f"{interp_frame},{track_id},{interp_x:.2f},{interp_y:.2f},{interp_w:.2f},{interp_h:.2f},{interp_conf:.4f},-1,1,-1\n"
+                        new_lines.append(line)
+                        seq_added += 1
+
+        # --- SALVATAGGIO ---
+        # Riordiniamo tutto il file per frame (MOT format lo richiede spesso)
+        # Parse temporaneo per ordinare
+        final_data = []
+        for line in new_lines:
+            parts = line.split(',')
+            final_data.append((int(parts[0]), line))
+            
+        final_data.sort(key=lambda x: x[0])
+        
+        out_path = interpolated_dir / f"{seq_name}.txt"
+        with open(out_path, 'w') as f:
+            for _, line in final_data:
+                f.write(line)
+                
+        print(f"    + Aggiunti {seq_added} box interpolati.")
+        total_added_boxes += seq_added
+
+    print(f"\nInterpolazione conclusa. Totale box recuperati: {total_added_boxes}")
+    print(f"Nuovi risultati salvati in: {interpolated_dir}")
+    print("ORA: Modifica run_eval.py per puntare a questa cartella e vedi quanto hai guadagnato!")
+
+if __name__ == "__main__":
+    interpolate_tracks(max_gap=20) # 20 frame = 0.8 secondi
+
+
+================================================
+FILE: src/Tracker/visualize_result.py
+================================================
+import cv2
+import os
+import sys
+import numpy as np
+from pathlib import Path
+from tqdm import tqdm
+
+# --- SETUP PATH per importare config ---
+current_file = Path(__file__).resolve()
+project_root = current_file.parent.parent.parent
+sys.path.append(str(project_root))
+
+from config import *
+
+def visualize_tracking():
+    # --- CONFIGURAZIONE VISIVA ---
+    # BGR format (Blue, Green, Red)
+    # Magenta/Fucsia ÃƒÂ¨ ottimo contro il verde
+    BOX_COLOR = (255, 0, 255) 
+    TEXT_COLOR = (255, 0, 255)
+    THICKNESS = 2
+    FONT_SCALE = 0.6
+    
+    # --- CONFIGURAZIONE CARTELLE ---
+    
+    # Cerchiamo la cartella corretta in TRACKER_OUTPUT_DIR
+    # Se non sei sicuro del nome, questo snippet prende l'ultima modificata
+    all_subdirs = [d for d in TRACKER_OUTPUT_DIR.iterdir() if d.is_dir()]
+    if not all_subdirs:
+        print("Nessuna cartella risultati trovata in output.")
+        return
+    
+    # Ordina per ultima modifica (cosÃƒÂ¬ prende l'ultimo run fatto)
+    latest_subdir = max(all_subdirs, key=os.path.getmtime)
+    print(f"UserÃƒÂ² i risultati dalla cartella: {latest_subdir.name}")
+    
+    trackers_folder = latest_subdir
+    
+    # 2. Cartella dove salvare i video
+    video_output_dir = OUTPUT_DIR / "visualization_videos"
+    video_output_dir.mkdir(parents=True, exist_ok=True)
+
+    # 3. Cartella delle immagini originali
+    base_data_path = DATASET_TR23_TEST
+
+    # Ottieni lista sequenze dai risultati txt
+    txt_files = sorted(list(trackers_folder.glob("*.txt")))
+    
+    if not txt_files:
+        print(f"Nessun file .txt trovato in {trackers_folder}")
+        return
+
+    print(f"Trovate {len(txt_files)} sequenze da visualizzare.")
+
+    for txt_file in txt_files:
+        seq_name = txt_file.stem # es. "SNMOT-060"
+        print(f"\n--> Generazione video per: {seq_name}")
+        
+        # Percorso immagini originali
+        img_dir = base_data_path / seq_name / "img1"
+        if not img_dir.exists():
+            print(f"ATTENZIONE: Immagini non trovate per {seq_name}. Salto.")
+            continue
+            
+        # Carica le detection/tracking dal txt
+        # Formato MOT: frame, id, x, y, w, h, ...
+        # Creiamo un dizionario: frame_id -> lista di [id, x, y, w, h]
+        tracks = {}
+        with open(txt_file, 'r') as f:
+            for line in f:
+                parts = line.strip().split(',')
+                if len(parts) < 6: continue
+                
+                frame_idx = int(parts[0])
+                obj_id = int(parts[1])
+                x = float(parts[2])
+                y = float(parts[3])
+                w = float(parts[4])
+                h = float(parts[5])
+                
+                if frame_idx not in tracks:
+                    tracks[frame_idx] = []
+                tracks[frame_idx].append((obj_id, x, y, w, h))
+
+        # Lista immagini
+        img_files = sorted([f for f in img_dir.glob("*.jpg")])
+        if not img_files:
+            continue
+
+        # Setup Video Writer
+        # Leggiamo la prima immagine per le dimensioni
+        first_img = cv2.imread(str(img_files[0]))
+        height, width, _ = first_img.shape
+        
+        save_path = video_output_dir / f"{seq_name}.mp4"
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v') # Codec mp4
+        out = cv2.VideoWriter(str(save_path), fourcc, 25.0, (width, height)) # 25 FPS standard
+
+        for img_path in tqdm(img_files, desc="Rendering frames"):
+            frame_id = int(img_path.stem) # es 00001 -> 1
+            
+            frame = cv2.imread(str(img_path))
+            
+            # Se ci sono detection per questo frame, disegnale
+            if frame_id in tracks:
+                for (obj_id, x, y, w, h) in tracks[frame_id]:
+                    # Coordinate intere per OpenCV
+                    x1 = int(x)
+                    y1 = int(y)
+                    x2 = int(x + w)
+                    y2 = int(y + h)
+                    
+                    # 1. Disegna Box Sottile
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), BOX_COLOR, THICKNESS)
+                    
+                    # 2. Testo ID (Sopra il box)
+                    label = f"{obj_id}"
+                    
+                    # Calcola dimensione testo per posizionarlo bene
+                    (text_w, text_h), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, FONT_SCALE, 1)
+                    
+                    # Posizione testo: appena sopra il box
+                    text_x = x1
+                    text_y = max(y1 - 5, text_h + 5) # Evita di uscire dall'immagine in alto
+                    
+                    # Disegna solo il testo (senza sfondo per pulizia, come richiesto)
+                    # Usiamo lo stesso colore del box per coerenza
+                    cv2.putText(frame, label, (text_x, text_y), 
+                                cv2.FONT_HERSHEY_SIMPLEX, FONT_SCALE, TEXT_COLOR, THICKNESS)
+
+            out.write(frame)
+
+        out.release()
+        print(f"Video salvato in: {save_path}")
+
+    print("\nVisualizzazione completata!")
+
+if __name__ == "__main__":
+    visualize_tracking()
+
+
+================================================
+FILE: src/Tracker/Yolo12m/botsort.yaml
+================================================
+tracker_type: botsort
+track_high_thresh: 0.5
+track_low_thresh: 0.1
+new_track_thresh: 0.6
+track_buffer: 120
+match_thresh: 0.7
+# --- RE-IDENTIFICATION ---
+with_reid: True
+model_name: osnet_x0_25
+proximity_thresh: 0.5
+appearance_thresh: 0.25
+# --- CAMERA MOTION ---
+gmc_method: ecc
+# --- BoTSORT SPECIFIC ---
+fuse_score: True
+
+
+================================================
+FILE: src/Tracker/Yolo12m/inference.py
+================================================
+import os
+import sys
+from ultralytics import YOLO
+from pathlib import Path
+
+# Setup path
+current_file = Path(__file__).resolve()
+project_root = current_file.parent.parent.parent.parent
+sys.path.append(str(project_root))
+
+from config import *
+from src.utils.get_best_device import get_best_device
+
+def run_optimized_tracking():
+    # --- CONFIGURAZIONE ---
+    # Usa il path assoluto o relativo corretto al file yaml appena creato
+    CONF_THRES = 0.35
+    MAX_ENTITIES = 28  # Il filtro "closed set" che abbiamo discusso
+    # ----------------------
+
+    DEVICE = get_best_device()
+    model_name = 'best.pt'
+    weights_path = MODEL_PATH / "training_runs" / "soccernet_high_precision" / "weights" / model_name
+    
+    print(f"Caricamento modello: {weights_path}")
+    print(f"Configurazione Tracker Custom: {TRACKER_CONFIG}")
+    
+    model = YOLO(weights_path)
+    model.to(DEVICE)
+
+    output_folder = TRACKER_OUTPUT_DIR / f"botsort_results"
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    base_path = DATASET_TR23_TEST
+    sequences = sorted(os.listdir(base_path))
+
+    for seq_name in sequences:
+        seq_path = os.path.join(base_path, seq_name)
+        img_source = os.path.join(seq_path, 'img1')
+
+        if os.path.isdir(seq_path) and os.path.exists(img_source):
+            print(f"--> Tracking sequenza: {seq_name}")
+            res_file_path = os.path.join(output_folder, f"{seq_name}.txt")
+            
+            # Reset del modello per pulire la memoria della GPU/Tracker tra sequenze
+            model = YOLO(weights_path)
+            model.to(DEVICE)
+
+            results = model.track(
+                source=img_source,
+                conf=CONF_THRES,
+                iou=0.6,
+                imgsz=1280,
+                device=0,
+                classes=[0],
+                tracker=str(TRACKER_CONFIG / "botsort.yaml"), # <--- QUI CARICHIAMO LA TUA CONFIGURAZIONE
+                persist=True,
+                verbose=False,
+                stream=True
+            )
+            
+            with open(res_file_path, 'w') as f:
+                for result in results:
+                    if result.boxes is None: continue
+                    
+                    frame_id = int(os.path.basename(result.path).split('.')[0])
+                    boxes = result.boxes.cpu().numpy()
+                    
+                    # --- Raccolta e Filtro Top-K (Closed Set Real-time) ---
+                    valid_candidates = []
+                    
+                    for box in boxes:
+                        # Se il box non ha ID (perso dal tracker), lo scartiamo o mettiamo -1
+                        if box.id is None: continue
+                        
+                        track_id = int(box.id[0])
+                        x1, y1, x2, y2 = box.xyxy[0]
+                        w = x2 - x1
+                        h = y2 - y1
+                        conf = box.conf[0]
+                        
+                        # Filtro geometrico (cartelloni bassi e larghi)
+                        if (w / h) > 1.3: continue
+                        
+                        valid_candidates.append({
+                            'line': f"{frame_id},{track_id},{x1:.2f},{y1:.2f},{w:.2f},{h:.2f},{conf:.4f},-1,1,-1\n",
+                            'conf': conf
+                        })
+                    
+                    # Ordina per confidenza e tieni solo i top 24 (22 giocatori + arbitri)
+                    valid_candidates.sort(key=lambda x: x['conf'], reverse=True)
+                    final_candidates = valid_candidates[:MAX_ENTITIES]
+                    
+                    for cand in final_candidates:
+                        f.write(cand['line'])
+
+            print(f"Salvati: {res_file_path}")
+
+if __name__ == "__main__":
+    run_optimized_tracking()
+
+
+================================================
+FILE: src/Tracker/Yolo12m/inference_ocsort.py
+================================================
+import os
+import sys
+import cv2
+import numpy as np
+from ultralytics import YOLO
+from pathlib import Path
+from boxmot import BoostTrack  # Utilizzo di BoostTrack per massimizzare AssA
+
+# Setup path (mantenendo la tua struttura)
+current_file = Path(__file__).resolve()
+project_root = current_file.parent.parent.parent.parent
+sys.path.append(str(project_root))
+
+from config import *
+from src.utils.get_best_device import get_best_device
+
+def run_boosttrack_soccer():
+    # --- CONFIGURAZIONE OTTIMIZZATA PER ASSA ---
+    CONF_THRES = 0.40      # Soglia leggermente piÃƒÂ¹ alta per pulire la DetA [cite: 80]
+    MAX_ENTITIES = 28      # Limite giocatori/arbitri [cite: 18]
+    REID_MODEL = 'osnet_x1_0_market1501.pt' # Re-ID necessario per re-identificare 
+    
+    DEVICE = get_best_device()
+    print(f"Utilizzo dispositivo: {DEVICE}")
+    weights_path = MODEL_PATH / "training_runs" / "soccernet_high_precision" / "weights" / "best.pt"
+    
+    model = YOLO(weights_path)
+    model.to(DEVICE)
+
+    output_folder = TRACKER_OUTPUT_DIR / "boosttrack_results"
+    os.makedirs(output_folder, exist_ok=True)
+
+    base_path = DATASET_TR23_TEST
+    sequences = sorted(os.listdir(base_path))
+
+    for seq_name in sequences:
+        seq_path = os.path.join(base_path, seq_name)
+        img_source = os.path.join(seq_path, 'img1')
+
+        if os.path.isdir(seq_path) and os.path.exists(img_source):
+            print(f"--> Tracking con BoostTrack: {seq_name}")
+            
+            # Formato file richiesto: tracking_K_XX.txt [cite: 59]
+            # Assumendo XX come team '01'
+            res_file_path = os.path.join(output_folder, f"tracking_{seq_name}_01.txt")
+            
+            # Inizializza BoostTrack
+            # Fondamentale per AssA: calibrazione GMC e Re-ID [cite: 71, 81]
+            tracker = BoostTrack(
+                model_weights=Path(REID_MODEL),
+                device=DEVICE,
+                fp16=True,
+                det_thresh=CONF_THRES,
+                max_age=150,        # Gestisce sparizioni temporanee dovute a pan della camera 
+                min_hits=3,
+                iou_threshold=0.3,  # Soglia per associazione spaziale
+                match_thresh=0.8,   # Soglia per Re-ID (apparenza)
+                gmc_method='ecc',   # Indispensabile per Moving Camera 
+                lambda_m=0.5,       # Peso del movimento nell'associazione
+                lambda_a=0.5,       # Peso dell'apparenza (Re-ID)
+                use_dfl=True        # Deep Feature Learner per migliorare l'associazione
+            )
+
+            frame_files = sorted([f for f in os.listdir(img_source) if f.endswith(('.jpg', '.png'))])
+
+            with open(res_file_path, 'w') as f:
+                for img_file in frame_files:
+                    frame_path = os.path.join(img_source, img_file)
+                    # frame_id deve partire da 1 [cite: 62]
+                    frame_id = int(''.join(filter(str.isdigit, img_file)))
+                    
+                    img = cv2.imread(frame_path)
+                    # Risoluzione 1280 per mantenere dettagli dei giocatori a 1080p [cite: 22]
+                    results = model.predict(img, conf=CONF_THRES, iou=0.5, imgsz=1280, device=DEVICE, classes=[0], verbose=False)
+                    dets = results[0].boxes.data.cpu().numpy()
+                    
+                    # Update BoostTrack
+                    tracks = tracker.update(dets, img)
+                    
+                    valid_candidates = []
+                    for track in tracks:
+                        x1, y1, x2, y2, track_id, conf, cls, ind = track
+                        w, h = x2 - x1, y2 - y1
+                        
+                        # Filtro giocatori: evita cartelloni orizzontali scambiati per persone
+                        if (w / h) > 0.9: continue
+                        
+                        valid_candidates.append({
+                            # Formato richiesto: frame_id,object_id,top_left_x,top_left_y,width,height 
+                            'line': f"{frame_id},{track_id},{x1:.2f},{y1:.2f},{w:.2f},{h:.2f},{conf:.4f},-1,1,-1\n",
+                            'conf': conf
+                        })
+                    
+                    # Seleziona i migliori candidati fino al limite MAX_ENTITIES
+                    valid_candidates.sort(key=lambda x: x['conf'], reverse=True)
+                    for cand in valid_candidates[:MAX_ENTITIES]:
+                        f.write(cand['line'])
+
+            print(f"Salvati: {res_file_path}")
+        
+        seqmap_file = SEQMAP_FILE
+        with open(seqmap_file, 'w') as f:
+            for seq_name in sequences:
+                f.write(f"{seq_name}\n")
+
+if __name__ == "__main__":
+    run_boosttrack_soccer()
+
+
+================================================
+FILE: src/Tracker/Yolo12m/oc-sort.yaml
+================================================
+tracker_type: ocsort
+track_high_thresh: 0.5  # Soglia per rilevamenti affidabili
+track_low_thresh: 0.1   # Per recuperare i giocatori durante le occlusioni
+new_track_thresh: 0.6   # Soglia per creare un nuovo ID
+track_buffer: 60        # Frame da mantenere (circa 2 secondi a 30fps)
+match_thresh: 0.3       # Soglia di distanza per l'associazione
+
+# --- GLOBAL MOTION COMPENSATION (GMC) ---
+# Fondamentale per la "moving camera" del contest 
+gmc_method: sparseOptFlow # Bilancia velocitÃƒÂ  e precisione nel calcio
+# soflow ÃƒÂ¨ un'ottima alternativa se usi librerie come BoxMOT
+
+# --- OC-SORT SPECIFIC PARAMS ---
+delta_t: 3              # Intervallo per la stima della velocitÃƒÂ  (inerzia)
+inertia: 0.2            # Peso della direzione precedente
+min_hits: 3             # Frame minimi per confermare una traccia
+iou_threshold: 0.3      # Soglia IoU per l'associazione
+fuse_score: True        
+
+
+================================================
+FILE: src/Tracker/Yolo12m/soccer_tracker.yaml
+================================================
+tracker_type: bytetrack  # Usiamo ByteTrack
+track_high_thresh: 0.5   # Soglia per la prima associazione (box sicuri)
+track_low_thresh: 0.1    # Soglia bassa: recupera detection deboli
+new_track_thresh: 0.6    # Confidenza alta per inizializzare nuove track
+track_buffer: 60         # 60 frame di memoria per le occlusioni (ottimo per il calcio)
+match_thresh: 0.8        # Soglia sovrapposizione
+fuse_score: True         # <--- RIGA AGGIUNTA: Obbligatoria per il fix
+
+
+================================================
+FILE: src/utils/__init__.py
+================================================
+[Empty file]
+
+
+================================================
+FILE: src/utils/get_best_device.py
+================================================
+import torch
+
+def get_best_device():
+    if torch.cuda.is_available():
+        return 'cuda'
+    
+    if torch.backends.mps.is_available():
+        return 'mps'
+    
+    return 'cpu'
+
+
+
 
 
 ================================================
@@ -2608,20 +5516,25 @@ if __name__ == "__main__":
 ================================================
 FILE: src/Tracker/Yolo12m/botsort.yaml
 ================================================
-tracker_type: botsort
-track_high_thresh: 0.5
+
+tracker_type: botsort  # Cambiato da bytetrack
+track_high_thresh: 0.5 
 track_low_thresh: 0.1
 new_track_thresh: 0.6
-track_buffer: 120
-match_thresh: 0.7
-# --- RE-IDENTIFICATION ---
-with_reid: True
-model_name: osnet_x0_25
+track_buffer: 90       # Aumentato per gestire meglio le sparizioni temporanee
+match_thresh: 0.7      # Leggermente abbassato per essere piÃ¹ flessibile nei movimenti rapidi
+
+# --- CAMERA MOTION COMPENSATION (GMC) ---
+gmc_method: sparseOptFlow # Metodo consigliato per il calcio (bilancia velocitÃ  e precisione)
+# Altre opzioni: 
+# 'orb' (veloce ma meno preciso), 
+# 'ecc' (molto preciso ma molto lento), 
+# 'none' (disattiva la compensazione)
+
+# --- BoTSORT SPECIFIC PARAMS ---
 proximity_thresh: 0.5
 appearance_thresh: 0.25
-# --- CAMERA MOTION ---
-gmc_method: ecc
-# --- BoTSORT SPECIFIC ---
+with_reid: False       # Lasciamo False per ora: i calciatori sono troppo 
 fuse_score: True
 
 
@@ -2732,7 +5645,7 @@ if __name__ == "__main__":
 
 
 ================================================
-FILE: src/Tracker/Yolo12m/inference_ocsort.py
+FILE: src/Tracker/Yolo12m/inference_boxmot.py
 ================================================
 import os
 import sys
@@ -2792,8 +5705,8 @@ def run_boosttrack_soccer():
                 iou_threshold=0.3,  # Soglia per associazione spaziale
                 match_thresh=0.8,   # Soglia per Re-ID (apparenza)
                 gmc_method='ecc',   # Indispensabile per Moving Camera 
-                lambda_m=0.5,       # Peso del movimento nell'associazione
-                lambda_a=0.5,       # Peso dell'apparenza (Re-ID)
+                lambda_m=0.7,       # Peso del movimento nell'associazione
+                lambda_a=0.3,       # Peso dell'apparenza (Re-ID)
                 use_dfl=True        # Deep Feature Learner per migliorare l'associazione
             )
 
