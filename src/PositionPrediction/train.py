@@ -1,141 +1,107 @@
-import os
-import sys
 import torch
-import numpy as np
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, TensorDataset
 from pathlib import Path
 from tqdm import tqdm
+import numpy as np
 
-# Setup path per importare config
-current_file = Path(__file__).resolve()
-project_root = current_file.parent.parent.parent
-sys.path.append(str(project_root))
-
-from config import DATASET_TR23_TRAIN
 from mlp import MLPPredictor
 from lstm import LSTMPredictor
 
 # --- CONFIGURAZIONE ---
-WINDOW_SIZE = 10    # Frame passati usati per predire
-BATCH_SIZE = 64
-EPOCHS = 50
+BATCH_SIZE = 1024  # Batch grande per velocità massima (i dati sono già in RAM)
+EPOCHS = 100
 LR = 0.001
-VAL_RATIO = 0.2     # 20% delle sequenze usate per validation
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# Risoluzione standard SoccerNet per normalizzazione
 IMG_W, IMG_H = 1920, 1080
 
-class SoccerTrajectoryDataset(Dataset):
-    def __init__(self, sequences, window_size=10):
-        self.x = []
-        self.y = []
-        
-        for seq_path in tqdm(sequences, desc="Caricamento sequenze"):
-            gt_file = os.path.join(seq_path, 'gt', 'gt.txt')
-            if not os.path.exists(gt_file): continue
-            
-            # Carica GT: frame, id, x, y, w, h, conf, class, vis
-            data = np.loadtxt(gt_file, delimiter=',')
-            
-            # Raggruppa per ID giocatore
-            unique_ids = np.unique(data[:, 1])
-            for obj_id in unique_ids:
-                # Prendi solo i record di questo giocatore ordinati per frame
-                player_data = data[data[:, 1] == obj_id]
-                player_data = player_data[player_data[:, 0].argsort()]
-                
-                # Estrai solo x, y, w, h e normalizza
-                coords = player_data[:, 2:6]
-                coords[:, [0, 2]] /= IMG_W
-                coords[:, [1, 3]] /= IMG_H
-                
-                # Crea finestre mobili (Sliding Window)
-                if len(coords) > window_size:
-                    for i in range(len(coords) - window_size):
-                        self.x.append(coords[i : i + window_size]) # Input: 10 frame
-                        self.y.append(coords[i + window_size])     # Target: frame 11
-        
-        self.x = torch.FloatTensor(np.array(self.x))
-        self.y = torch.FloatTensor(np.array(self.y))
+def get_pixel_error(output, target):
+    """Calcola l'errore medio in pixel tra i centri predetto e reale"""
+    # Denormalizzazione centri
+    out_cx = (output[:, 0] + output[:, 2]/2) * IMG_W
+    out_cy = (output[:, 1] + output[:, 3]/2) * IMG_H
+    tgt_cx = (target[:, 0] + target[:, 2]/2) * IMG_W
+    tgt_cy = (target[:, 1] + target[:, 3]/2) * IMG_H
+    
+    dist = torch.sqrt((out_cx - tgt_cx)**2 + (out_cy - tgt_cy)**2)
+    return dist.mean().item()
 
-    def __len__(self): return len(self.x)
-    def __getitem__(self, idx): return self.x[idx], self.y[idx]
+def train_engine(name, model, train_loader, val_loader):
+    print(f"\n>>> Allenamento {name} su {DEVICE}...")
+    optimizer = torch.optim.Adam(model.parameters(), lr=LR)
+    criterion = nn.MSELoss()
+    is_lstm = (name == "LSTM")
+    best_pixel_err = float('inf')
+    
+    # Per il grafico finale o log
+    history = {'train_loss': [], 'val_px_err': []}
 
-def train_one_epoch(model, loader, optimizer, criterion, is_lstm=False):
-    model.train()
-    total_loss = 0
-    for batch_x, batch_y in loader:
-        batch_x, batch_y = batch_x.to(DEVICE), batch_y.to(DEVICE)
+    for epoch in range(EPOCHS):
+        model.train()
+        train_loss = 0
         
-        # Se MLP, dobbiamo appiattire l'input (batch, window*4)
-        if not is_lstm:
-            batch_x = batch_x.view(batch_x.size(0), -1)
-            
-        optimizer.zero_grad()
-        output = model(batch_x)
-        loss = criterion(output, batch_y)
-        loss.backward()
-        optimizer.step()
-        total_loss += loss.item()
-    return total_loss / len(loader)
-
-def validate(model, loader, criterion, is_lstm=False):
-    model.eval()
-    total_loss = 0
-    with torch.no_grad():
-        for batch_x, batch_y in loader:
+        pbar = tqdm(train_loader, desc=f"Epoch {epoch+1:03d}/{EPOCHS}", leave=False)
+        for batch_x, batch_y in pbar:
             batch_x, batch_y = batch_x.to(DEVICE), batch_y.to(DEVICE)
-            if not is_lstm: batch_x = batch_x.view(batch_x.size(0), -1)
+            
+            if not is_lstm: 
+                batch_x = batch_x.view(batch_x.size(0), -1)
+                
+            optimizer.zero_grad()
             output = model(batch_x)
             loss = criterion(output, batch_y)
-            total_loss += loss.item()
-    return total_loss / len(loader)
+            loss.backward()
+            optimizer.step()
+            
+            train_loss += loss.item()
+            pbar.set_postfix({'loss': f"{loss.item():.6f}"})
 
-def run_training():
-    # 1. Preparazione split sequenze
-    all_seq_dirs = [os.path.join(DATASET_TR23_TRAIN, d) for d in os.listdir(DATASET_TR23_TRAIN) 
-                    if os.path.isdir(os.path.join(DATASET_TR23_TRAIN, d))]
-    np.random.shuffle(all_seq_dirs)
-    
-    val_split = int(len(all_seq_dirs) * VAL_RATIO)
-    train_dirs = all_seq_dirs[val_split:]
-    val_dirs = all_seq_dirs[:val_split]
-    
-    print(f"Train su {len(train_dirs)} video, Val su {len(val_dirs)} video")
-
-    # 2. Creazione Dataset e Loader
-    train_ds = SoccerTrajectoryDataset(train_dirs, WINDOW_SIZE)
-    val_ds = SoccerTrajectoryDataset(val_dirs, WINDOW_SIZE)
-    train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
-    val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE)
-
-    # 3. Inizializzazione Modelli
-    models = {
-        "MLP": MLPPredictor(window_size=WINDOW_SIZE).to(DEVICE),
-        "LSTM": LSTMPredictor(input_dim=4, hidden_dim=64).to(DEVICE)
-    }
-    
-    criterion = nn.MSELoss()
-
-    # 4. Loop di addestramento
-    for name, model in models.items():
-        print(f"\n--- Inizio Training modello: {name} ---")
-        optimizer = torch.optim.Adam(model.parameters(), lr=LR)
-        is_lstm = (name == "LSTM")
-        best_val_loss = float('inf')
+        # Validazione e calcolo errore in Pixel
+        model.eval()
+        val_px_err = 0
+        with torch.no_grad():
+            for vx, vy in val_loader:
+                vx, vy = vx.to(DEVICE), vy.to(DEVICE)
+                if not is_lstm: vx = vx.view(vx.size(0), -1)
+                vo = model(vx)
+                val_px_err += get_pixel_error(vo, vy)
         
-        for epoch in range(EPOCHS):
-            train_loss = train_one_epoch(model, train_loader, optimizer, criterion, is_lstm)
-            val_loss = validate(model, val_loader, criterion, is_lstm)
+        avg_train_loss = train_loss / len(train_loader)
+        avg_val_px = val_px_err / len(val_loader)
+        
+        history['train_loss'].append(avg_train_loss)
+        history['val_px_err'].append(avg_val_px)
+
+        # Salvataggio del modello migliore
+        if avg_val_px < best_pixel_err:
+            best_pixel_err = avg_val_px
+            torch.save(model.state_dict(), Path(__file__).parent / f"best_{name.lower()}.pt")
             
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
-                torch.save(model.state_dict(), f"best_{name.lower()}_soccer.pt")
-            
-            if (epoch+1) % 5 == 0:
-                print(f"Epoch {epoch+1:02d} | Train Loss: {train_loss:.6f} | Val Loss: {val_loss:.6f}")
+        print(f"Epoch {epoch+1:03d} | Loss: {avg_train_loss:.6f} | Errore Val: {avg_val_px:.2f} px {'(MIGLIORE)' if avg_val_px == best_pixel_err else ''}")
+
+    print(f"\nFine training {name}. Miglior errore: {best_pixel_err:.2f} px")
+
+def main():
+    base_path = Path(__file__).parent / "dataset"
+    
+    # 1. Caricamento istantaneo dei tensori
+    print("Caricamento dati...")
+    train_x = torch.load(base_path / "train" / "x.pth")
+    train_y = torch.load(base_path / "train" / "y.pth")
+    val_x = torch.load(base_path / "val" / "x.pth")
+    val_y = torch.load(base_path / "val" / "y.pth")
+
+    train_loader = DataLoader(TensorDataset(train_x, train_y), batch_size=BATCH_SIZE, shuffle=True)
+    val_loader = DataLoader(TensorDataset(val_x, val_y), batch_size=BATCH_SIZE)
+
+    # 2. Inizializzazione Modelli
+    # WINDOW_SIZE = 10 (come impostato in build_dataset.py)
+    mlp = MLPPredictor(window_size=10).to(DEVICE)
+    lstm = LSTMPredictor(input_dim=4, hidden_dim=64).to(DEVICE)
+
+    # 3. Training
+    train_engine("MLP", mlp, train_loader, val_loader)
+    train_engine("LSTM", lstm, train_loader, val_loader)
 
 if __name__ == "__main__":
-    run_training()
+    main()
