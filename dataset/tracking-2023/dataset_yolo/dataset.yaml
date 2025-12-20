@@ -1,5 +1,5 @@
 
-path: C:/Users/leona/Documents/AV_Project/ArtificialVisionGroup17/dataset/tracking-2023/dataset_yolo
+path: /workspace/ArtificialVisionGroup17/dataset/tracking-2023/dataset_yolo
 train: images/train
 val: images/val
 names:

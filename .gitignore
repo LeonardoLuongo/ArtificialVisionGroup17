@@ -11,3 +11,4 @@
 /dataset/tracking-2023/test/*
 *.cache
 *.cache
+*.DS_Store
