@@ -1,7 +1,6 @@
 Directory structure:
 └── ArtificialVisionGroup17/
     ├── config.py
-    ├── mio_codice.txt
     ├── conda/
     │   ├── build_run.bat
     │   ├── build_run.sh
@@ -84,12 +83,6 @@ SEQMAP_DIR = OUTPUT_DIR / "seqmap"
 SEQMAP_FILE = SEQMAP_DIR / "soccer_test.txt"
 
 TRACKER_CONFIG = ROOT_DIR / "src" / "Tracker" / "Yolo12m" 
-
-
-================================================
-FILE: mio_codice.txt
-================================================
-[Binary file]
 
 
 ================================================
@@ -2830,7 +2823,7 @@ def run_boosttrack_soccer():
                         
                         valid_candidates.append({
                             # Formato richiesto: frame_id,object_id,top_left_x,top_left_y,width,height 
-                            'line': f"{frame_id},{int(track_id)},{x1:.2f},{y1:.2f},{w:.2f},{h:.2f}\n",
+                            'line': f"{frame_id},{track_id},{x1:.2f},{y1:.2f},{w:.2f},{h:.2f},{conf:.4f},-1,1,-1\n",
                             'conf': conf
                         })
                     
@@ -2840,6 +2833,11 @@ def run_boosttrack_soccer():
                         f.write(cand['line'])
 
             print(f"Salvati: {res_file_path}")
+        
+        seqmap_file = SEQMAP_FILE
+        with open(seqmap_file, 'w') as f:
+            for seq_name in sequences:
+                f.write(f"{seq_name}\n")
 
 if __name__ == "__main__":
     run_boosttrack_soccer()
