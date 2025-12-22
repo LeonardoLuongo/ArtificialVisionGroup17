@@ -11,3 +11,11 @@
 /dataset/tracking-2023/test/*
 *.cache
 *.cache
+**/lecture_example_from_training/**/*.txt
+**/lecture_example_from_training/**/**/**/**/*.jpg
+*.pth
+./SIMULATOR/lecture_example_from_training/test_set/videos/1/img1/*.jpg
+dataset/blur_dataset/images/*
+dataset/blur_dataset/labels/*
+models/re-ids/osnet_x1_0.pth
+models/re-ids/osnet_x1_0.pth

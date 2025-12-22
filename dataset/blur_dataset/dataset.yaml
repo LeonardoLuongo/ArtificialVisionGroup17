@@ -1,0 +1,6 @@
+
+path: C:/Users/leona/Documents/AV_Project/ArtificialVisionGroup17/dataset/blur_dataset
+train: splits/train.txt
+val: splits/val.txt
+names:
+  0: player
