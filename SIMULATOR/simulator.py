@@ -411,9 +411,9 @@ def simulate_and_eval_hota05(
 if __name__ == "__main__":
     simulate_and_eval_hota05(
         dataset_root="dataset/tracking-2023/test",
-        predictions_root="out/tracker_results/final_robust_tracker",
+        predictions_root="out/tracker_results/final_provisional_tracker",
         group="17",
         fps=25.0,
         split="test",
-        show_window=False,
+        show_window=True,
     )

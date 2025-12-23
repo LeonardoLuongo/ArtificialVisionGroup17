@@ -266,6 +266,16 @@ def compute_hota_at_05_trackeval(
     alphas = np.array(hota_metric.array_labels, dtype=float) # get array of alphas used in HOTA curve
     idx = int(np.where(np.isclose(alphas, 0.5))[0][0]) # find index of alpha=0.50 
 
-    # SoccerNet-style extraction uses COMBINED_SEQ and class key "pedestrian"
-    hota_curve = output_res["MotChallenge2DBox"][tracker_name]["COMBINED_SEQ"]["pedestrian"]["HOTA"]["HOTA"] # from the output results, get HOTA curve for combined sequences and pedestrian class 
-    return float(hota_curve[idx]) # return HOTA@0.50 value as float
+    # 1. Create a reference to the specific metrics dictionary
+    metrics = output_res["MotChallenge2DBox"][tracker_name]["COMBINED_SEQ"]["pedestrian"]["HOTA"]
+
+    # 2. Now the print statements are much cleaner and less prone to syntax errors
+    print(f"DetA@0.5:  {float(metrics['DetA'][idx]):.6f}")
+    print(f"DetRe@0.5: {float(metrics['DetRe'][idx]):.6f}")
+    print(f"DetPr@0.5: {float(metrics['DetPr'][idx]):.6f}")
+    print(f"AssA@0.5:  {float(metrics['AssA'][idx]):.6f}")
+    print(f"AssRe@0.5: {float(metrics['AssRe'][idx]):.6f}")
+    print(f"AssPr@0.5: {float(metrics['AssPr'][idx]):.6f}")
+
+    # 3. Return the specific HOTA value
+    return float(metrics["HOTA"][idx])

@@ -17,7 +17,7 @@ def run_evaluation():
     print(f"Cercando Seqmap in: {seqmap_folder_abs}")
 
     # Verifica veloce
-    if not os.path.exists(os.path.join(gt_folder_abs, 'SNMOT-116', 'seqinfo.ini')):
+    if not os.path.exists(os.path.join(gt_folder_abs, '116', 'seqinfo.ini')):
         print("ATTENZIONE: seqinfo.ini non trovato nemmeno nel path assoluto per 116!")
 
     eval_config = {
