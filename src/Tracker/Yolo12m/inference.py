@@ -375,7 +375,7 @@ def run_hybrid_tracking():
         
         mapper = RobustMapper()
         
-        yolo = YOLO(MODEL_PATH / "training_runs" / "soccernet_blur_final" / "weights" / "best.pt")
+        yolo = YOLO(MODEL_PATH /  "bestyolo8.pt")
         results_gen = yolo.track(
             source=os.path.join(base_path, seq_name, 'img1'),
             conf=CONF_THRES,
