@@ -20,7 +20,7 @@ from src.utils.get_best_device import get_best_device
 import torchreid
 
 # --- CONFIGURAZIONE ---
-CONF_THRES = 0.35           
+CONF_THRES = 0.1           
 MAX_ENTITIES = 28           
 VERIFY_THRESHOLD = 0.45     
 MATCH_THRESHOLD = 0.65      
