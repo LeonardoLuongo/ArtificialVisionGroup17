@@ -111,6 +111,59 @@ class ReIDExtractor:
         return self.model(input_t).cpu().numpy()
 
 
+class CameraCompensator:
+    def __init__(self):
+        self.prev_gray = None
+        # Parametri per rilevare buoni punti da tracciare (angoli, linee di campo)
+        self.feature_params = dict(maxCorners=500, qualityLevel=0.3, minDistance=7, blockSize=7)
+        # Parametri per Lucas-Kanade Optical Flow
+        self.lk_params = dict(winSize=(15, 15), maxLevel=2,
+                              criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
+
+    def update_and_get_transform(self, curr_frame):
+        curr_gray = cv2.cvtColor(curr_frame, cv2.COLOR_BGR2GRAY)
+        
+        if self.prev_gray is None:
+            self.prev_gray = curr_gray
+            return np.eye(2, 3, dtype=np.float32) # Nessun movimento al primo frame
+
+        # 1. Trova punti interessanti nel vecchio frame (angoli, linee)
+        p0 = cv2.goodFeaturesToTrack(self.prev_gray, mask=None, **self.feature_params)
+        
+        if p0 is None:
+            self.prev_gray = curr_gray
+            return np.eye(2, 3, dtype=np.float32)
+
+        # 2. Calcola dove sono finiti quei punti nel nuovo frame (Optical Flow)
+        p1, st, err = cv2.calcOpticalFlowPyrLK(self.prev_gray, curr_gray, p0, None, **self.lk_params)
+
+        # Filtra solo i punti validi
+        good_new = p1[st == 1]
+        good_old = p0[st == 1]
+
+        # 3. Stima la trasformazione Affine (traslazione + zoom + rotazione)
+        # Usiamo RANSAC per ignorare outlier (es. giocatori che si muovono diversamente dallo sfondo)
+        m = np.eye(2, 3, dtype=np.float32)
+        if len(good_new) > 8: # Servono abbastanza punti
+            m, _ = cv2.estimateAffinePartial2D(good_old, good_new, method=cv2.RANSAC)
+            if m is None: m = np.eye(2, 3, dtype=np.float32)
+
+        self.prev_gray = curr_gray
+        return m
+
+    def apply_transform(self, bbox, transform_matrix):
+        # Applica la matrice (rotazione/zoom/traslazione) al centro del bbox
+        # bbox è [x1, y1, x2, y2]
+        # Trasformiamo i due punti (top-left e bottom-right) per approssimare
+        pts = np.array([
+            [bbox[0], bbox[1]], # TL
+            [bbox[2], bbox[3]]  # BR
+        ], dtype=np.float32).reshape(-1, 1, 2)
+        
+        dst = cv2.transform(pts, transform_matrix)
+        dst = dst.reshape(2, 2)
+        return np.array([dst[0,0], dst[0,1], dst[1,0], dst[1,1]], dtype=np.float32)
+
 class GlobalTrack:
     def __init__(self, global_id, embedding, bbox, frame_id, conf, state='probation'):
         self.global_id = global_id
@@ -173,7 +226,8 @@ class RobustMapper:
         self.botsort_to_global = {} 
         self.tracks = {} 
         self.next_global_id = 1
-        
+        # --- COMPENSATORE CAMERA ---
+        self.gmc = CameraCompensator()
         # CONFIGURAZIONE
         self.PROBATION_FRAMES = 8   
         self.MERGE_THRESH = 0.70    
@@ -183,7 +237,14 @@ class RobustMapper:
         # Deve essere alta. Se recuperiamo l'ID sbagliato qui, facciamo un disastro.
         self.RECOVERY_THRESH = 0.75 
 
-    def process_frame(self, botsort_ids, embeddings, boxes, confs, frame_id):
+    def process_frame(self, botsort_ids, embeddings, boxes, confs, frame_id, current_frame_img):
+        # 1. Update GMC e Trasforma i BBox vecchi
+        transform_m = self.gmc.update_and_get_transform(current_frame_img)
+        
+        # Aggiorniamo TUTTE le posizioni note applicando lo spostamento della camera
+        for gid, track in self.tracks.items():
+            track.last_bbox = self.gmc.apply_transform(track.last_bbox, transform_m)
+
         current_centroids = (boxes[:, :2] + boxes[:, 2:]) / 2.0
         num_dets = len(botsort_ids)
         
@@ -208,7 +269,12 @@ class RobustMapper:
                 track = self.tracks.get(gid)
                 if track:
                     active_global_ids.add(gid)
-                    track.update(embeddings[i], current_centroids[i], frame_id, confs[i])
+                    track.update(embeddings[i], boxes[i], frame_id, confs[i])
+                    
+                    # Se il track è locked o probation avanzato, resettiamo il guess
+                    # perché ormai "è lui"
+                    if track.state == 'locked':
+                        track.best_guess_id = None
                 else:
                     del self.botsort_to_global[bid]
                     unmapped_indices.append(i)
@@ -235,8 +301,14 @@ class RobustMapper:
                     for c_gid, c_track in self.tracks.items():
                         if c_gid == gid or c_gid in active_global_ids or c_track.state != 'locked': continue
                         dt = frame_id - c_track.last_seen_frame
-                        if dt > 600: continue
-                        if np.linalg.norm(track.last_bbox - c_track.last_bbox) < (100 + 40 * dt):
+                        if dt > 1500: continue # Timeout temporale ampio
+                        
+                        # Distanza spaziale (ora corretta dal GMC!)
+                        dist = np.linalg.norm((track.last_bbox[:2]+track.last_bbox[2:])/2 - 
+                                            (c_track.last_bbox[:2]+c_track.last_bbox[2:])/2)
+                        
+                        # Soglia spaziale dinamica
+                        if dist < (150 + 60 * dt): 
                             sim = c_track.compute_sim(curr_emb)
                             if sim > max_sim: max_sim = sim; best_match = c_track
                 
@@ -269,7 +341,8 @@ class RobustMapper:
         for i in unmapped_indices:
             emb = embeddings[i]
             conf = confs[i]
-            centroid = current_centroids[i]
+            bbox = boxes[i]
+            centroid = (bbox[:2] + bbox[2:]) / 2.0
             bid = botsort_ids[i]
             
             # Recuperiamo solo se l'immagine è decente
@@ -286,10 +359,11 @@ class RobustMapper:
                     dt = frame_id - track.last_seen_frame
                     if dt > 900: continue # 30 secondi
                     
-                    # 3. Filtro Spaziale Generoso (Recupero)
-                    # Velocità max stimata: 50 pixel/frame (sprint + camera pan)
-                    dist = np.linalg.norm(centroid - track.last_bbox)
-                    if dist < (100 + 50 * dt):
+                    # Distanza con GMC applicato
+                    track_center = (track.last_bbox[:2] + track.last_bbox[2:]) / 2.0
+                    dist = np.linalg.norm(centroid - track_center)
+                    
+                    if dist < (150 + 50 * dt):
                         sim = track.compute_sim(emb)
                         if sim > best_sim:
                             best_sim = sim
@@ -299,13 +373,7 @@ class RobustMapper:
                 if best_sim > self.RECOVERY_THRESH:
                     # TROVATO! È LUI!
                     self.botsort_to_global[bid] = best_gid
-                    
-                    # Aggiorniamo subito il track
-                    recovered_track = self.tracks[best_gid]
-                    recovered_track.update(emb, centroid, frame_id, conf)
-                    
-                    # Se era probation, lo teniamo probation. Se era locked, resta locked.
-                    # Ma lo segniamo come ATTIVO così nessuno altro può prenderlo in questo frame
+                    self.tracks[best_gid].update(emb, bbox, frame_id, conf)
                     active_global_ids.add(best_gid)
                     continue # Passa al prossimo unmapped
 
@@ -322,8 +390,8 @@ class RobustMapper:
             new_gid = self.next_global_id
             self.next_global_id += 1
             
-            # Nasce sempre in Probation
-            self.tracks[new_gid] = GlobalTrack(new_gid, emb, centroid, frame_id, conf, state='probation')
+            # Nasce in Probation e cercherà subito un Best Guess al prossimo loop
+            self.tracks[new_gid] = GlobalTrack(new_gid, embeddings[i], boxes[i], frame_id, confs[i], state='probation')
             self.botsort_to_global[bid] = new_gid
             
             # Aggiungiamo ai globali attivi per correttezza (anche se loop finito)
@@ -415,8 +483,11 @@ def run_hybrid_tracking():
                 embeddings = reid_extractor.get_embeddings(frame_img, boxes_xyxy)
                 
                 if len(embeddings) > 0:
-                    global_ids = mapper.process_frame(botsort_ids, embeddings, boxes_xyxy, confs, frame_id)
+                    global_ids = mapper.process_frame(botsort_ids, embeddings, boxes_xyxy, confs, frame_id, frame_img)
                 else:
+                    # IMPORTANTE: Anche se non ci sono detection, dobbiamo aggiornare la camera!
+                    # Altrimenti la compensazione perde il filo del movimento
+                    mapper.gmc.update_and_get_transform(frame_img)
                     global_ids = []
 
                 # --- WRITING TRACKING (6 colonne come richiesto) ---
