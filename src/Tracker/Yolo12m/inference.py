@@ -9,6 +9,8 @@ from scipy.spatial.distance import cdist
 from scipy.optimize import linear_sum_assignment
 from collections import deque
 import json
+import timm
+
 
 # Setup path
 current_file = Path(__file__).resolve()
@@ -62,31 +64,72 @@ def count_players_in_rois(boxes_xyxy, roi_data, img_w, img_h):
 class ReIDExtractor:
     def __init__(self, weights_path, device='cuda'):
         self.device = device
-        weights_str = str(weights_path).lower()
-        self.resize_wh = (128, 256) # Default OSNet
+        # SportsReid usa 224x224
+        self.resize_wh = (224, 224) 
         
-        if 'vit' in weights_str:
-            self.resize_wh = (224, 224) 
-            if 'l_16' in weights_str: model_name = 'vit_l_16'
-            elif 'b_16' in weights_str: model_name = 'vit_b_16'
-            else: model_name = 'vit_b_16'
-        elif 'ain' in weights_str:
-            model_name = 'osnet_ain_x1_0'
-        else:
-            model_name = 'osnet_x1_0'
-            
-        print(f"--> ReID Model: {model_name} | Input: {self.resize_wh}")
-
+        print(f"--> Building timm Model: vit_large_patch16_224")
+        
+        # Creiamo il modello. global_pool='avg' è FONDAMENTALE.
+        # Dice al modello: "Fregatene del CLS token, fai la media delle patch".
         try:
-            self.model = torchreid.models.build_model(name=model_name, num_classes=1000, pretrained=False)
-        except KeyError:
-            print(f"ERRORE: Modello {model_name} non supportato.")
+            self.model = timm.create_model(
+                'vit_large_patch16_224', 
+                pretrained=False, 
+                num_classes=0,      # Rimuove la testa di classificazione
+                global_pool='avg'   # Usa Average Pooling sulle patch
+            )
+        except Exception as e:
+            print(f"Errore creazione modello timm: {e}")
             sys.exit(1)
-
-        if weights_path and os.path.exists(weights_path):
-            torchreid.utils.load_pretrained_weights(self.model, weights_path)
             
         self.model.to(device).eval()
+
+        if weights_path and os.path.exists(weights_path):
+            print(f"Loading weights from: {weights_path}")
+            checkpoint = torch.load(weights_path, map_location='cpu')
+            
+            if isinstance(checkpoint, dict):
+                if 'state_dict' in checkpoint: state_dict = checkpoint['state_dict']
+                elif 'model' in checkpoint: state_dict = checkpoint['model']
+                else: state_dict = checkpoint
+            else:
+                state_dict = checkpoint
+
+            new_state_dict = {}
+            for k, v in state_dict.items():
+                k = k.replace("module.", "")
+                if k.startswith("model."): k = k.replace("model.", "")
+                new_state_dict[k] = v
+
+            # --- IL FIX DECISIVO ---
+            # Se il modello vuole 197 e noi abbiamo 196, aggiungiamo un dummy token.
+            # Poiché usiamo global_pool='avg', questo token dummy NON INFLUENZA IL RISULTATO.
+            pos_key = 'pos_embed'
+            if pos_key in new_state_dict:
+                chk_tensor = new_state_dict[pos_key] # Shape [1, 196, 1024]
+                model_shape = self.model.pos_embed.shape # Shape [1, 197, 1024]
+                
+                if chk_tensor.shape[1] == 196 and model_shape[1] == 197:
+                    print("⚙️ FIX APPLICATO: Adattamento pos_embed 196 -> 197 (Safe per AvgPool)")
+                    # Creiamo un token vuoto (zeri)
+                    dummy_token = torch.zeros((1, 1, chk_tensor.shape[2]), dtype=chk_tensor.dtype)
+                    # Lo incolliamo all'inizio: [Dummy | Patch1 ... Patch196]
+                    new_tensor = torch.cat((dummy_token, chk_tensor), dim=1)
+                    new_state_dict[pos_key] = new_tensor
+
+            # Caricamento
+            missing, unexpected = self.model.load_state_dict(new_state_dict, strict=False)
+            
+            if len(missing) > 0:
+                real_missing = [k for k in missing if "pos_embed" not in k] # Ignoriamo errori già gestiti
+                if real_missing:
+                    print(f"Info: Layer mancanti (normali se head/fc): {len(real_missing)}")
+            print("✅ Pesi caricati con successo.")
+            
+        else:
+            print("❌ ERRORE: File pesi non trovato!")
+            sys.exit(1)
+
         self.mean = torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1).to(self.device)
         self.std = torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1).to(self.device)
 
@@ -100,15 +143,22 @@ class ReIDExtractor:
             x1, y1, x2, y2 = map(int, box)
             x1, y1 = max(0, x1), max(0, y1)
             x2, y2 = min(w_img, x2), min(h_img, y2)
+            
             crop = frame[y1:y2, x1:x2]
-            if crop.size == 0: crop = np.zeros((self.resize_wh[1], self.resize_wh[0], 3), dtype=np.uint8)
+            if crop.size == 0: 
+                crop = np.zeros((self.resize_wh[1], self.resize_wh[0], 3), dtype=np.uint8)
+            
             crop = cv2.resize(crop, self.resize_wh)
             crop = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
             crops.append(np.transpose(crop, (2, 0, 1)))
 
         input_t = torch.from_numpy(np.array(crops)).float().to(self.device) / 255.0
         input_t = (input_t - self.mean) / self.std
-        return self.model(input_t).cpu().numpy()
+        
+        features = self.model(input_t)
+        return features.cpu().numpy()
+
+
 
 
 class CameraCompensator:
@@ -423,11 +473,11 @@ def run_hybrid_tracking():
     TEAM_ID = "17"
 
     DEVICE = get_best_device()
-    REID_WEIGHTS = MODEL_PATH / "re-ids" / "osnet_x1_0.pt" # O osnet_ain_x1_0.pt
+    REID_WEIGHTS = MODEL_PATH / "re-ids" / "ViT-L_16.pt" # O osnet_ain_x1_0.pt
     
     reid_extractor = ReIDExtractor(str(REID_WEIGHTS), DEVICE)
     
-    output_folder = TRACKER_OUTPUT_DIR / "final_provisional_tracker"
+    output_folder = TRACKER_OUTPUT_DIR / "final_provisional_tracker2"
     output_folder.mkdir(parents=True, exist_ok=True)
 
     base_path = DATASET_TR23_TEST
