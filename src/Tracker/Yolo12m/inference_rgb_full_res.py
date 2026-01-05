@@ -538,10 +538,10 @@ def run_hybrid_tracking():
     
     # Inizializzazione Modelli
     reid_extractor = ReIDExtractor(str(REID_WEIGHTS), DEVICE)
-    yolo = YOLO(MODEL_PATH / "bestyolo8.pt")
+    yolo = YOLO(MODEL_PATH / "training_runs" / "soccernet_v8m_ultra_19208" / "weights" / "best.pt")
     
     # Setup Output
-    output_folder = TRACKER_OUTPUT_DIR / "final_results2_rgb_fres"
+    output_folder = TRACKER_OUTPUT_DIR / "final_results2_rgb_fres_2"
     output_folder.mkdir(parents=True, exist_ok=True)
 
     base_path = DATASET_TR23_TEST
