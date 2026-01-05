@@ -541,11 +541,11 @@ def run_hybrid_tracking():
     yolo = YOLO(MODEL_PATH / "bestyolo8.pt")
     
     # Setup Output
-    output_folder = TRACKER_OUTPUT_DIR / "final_results2_rgb_norm"
+    output_folder = TRACKER_OUTPUT_DIR / "sportsmot_2"
     output_folder.mkdir(parents=True, exist_ok=True)
 
-    base_path = DATASET_TR23_TEST
-    sequences = sorted([s for s in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, s))])
+    base_path = DATASET_SPM_VAL
+    sequences = [ "1", "2", "3", "4", "5"]
 
     for seq_name in sequences:
         print(f"Processing Sequence: {seq_name}...")

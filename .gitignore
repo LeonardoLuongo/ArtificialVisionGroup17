@@ -17,6 +17,9 @@
 ./SIMULATOR/lecture_example_from_training/test_set/videos/1/img1/*.jpg
 dataset/blur_dataset/images/*
 dataset/blur_dataset/labels/*
+dataset/sportsmot/test/*
+dataset/sportsmot/train/*
+dataset/sportsmot/val/*
 models/re-ids/osnet_x1_0.pth
 models/re-ids/osnet_x1_0.pth
 *.tar-10
