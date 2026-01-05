@@ -147,6 +147,7 @@ def build_trackeval_structure(
     tmp_root: str,
     benchmark: str = "SNMOT",
     tracker_name: str = "test",
+    n_videos: int = -1
 ) -> Tuple[str, str, str]:
     """
     Creates:
@@ -176,7 +177,12 @@ def build_trackeval_structure(
     os.makedirs(gt_bs, exist_ok=True)
     os.makedirs(tr_bs, exist_ok=True)
 
-    seqs = list_video_ids(dataset_root) # list of numeric folder names in dataset_root
+    # MODIFIED
+    if n_videos > 0:
+        seqs = list_video_ids(dataset_root)[:n_videos] # list of numeric folder names in dataset_root
+    else:
+        seqs = list_video_ids(dataset_root)
+
     if not seqs:
         raise FileNotFoundError(f"No numeric video folders found in: {dataset_root}")
 
