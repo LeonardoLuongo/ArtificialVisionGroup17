@@ -19,3 +19,4 @@ dataset/blur_dataset/images/*
 dataset/blur_dataset/labels/*
 models/re-ids/osnet_x1_0.pth
 models/re-ids/osnet_x1_0.pth
+*.tar-10

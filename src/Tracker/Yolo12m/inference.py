@@ -517,7 +517,7 @@ def run_hybrid_tracking():
     yolo = YOLO(MODEL_PATH / "bestyolo8.pt")
     
     # Setup Output
-    output_folder = TRACKER_OUTPUT_DIR / "final_results2"
+    output_folder = TRACKER_OUTPUT_DIR / "final_results3"
     output_folder.mkdir(parents=True, exist_ok=True)
 
     base_path = DATASET_TR23_TEST
