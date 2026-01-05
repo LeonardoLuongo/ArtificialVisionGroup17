@@ -1,7 +1,19 @@
 # src/Detector/YOLO/train.py
+
+import sys
+import os
+import torch
+
+# --- FIX PER RTX 5070 (BLACKWELL) ---
+# Forza PyTorch a usare i kernel della serie 40
+os.environ['TORCH_CUDA_ARCH_LIST'] = "9.0"
+# Forza il caricamento dinamico dei moduli CUDA
+os.environ['CUDA_MODULE_LOADING'] = "LAZY"
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
+# ------------------------------------
+
 from ultralytics import YOLO
 from pathlib import Path
-import sys
 
 # Aggiungi root al path per importare config
 ROOT_DIR = Path(__file__).parent.parent.parent.parent.resolve()
@@ -15,29 +27,46 @@ def train_yolo():
     if not dataset_yaml.exists():
         print("Errore: Dataset YAML non trovato. Esegui prima convert_to_yolo.py")
         return
-
-    # Carica modello pre-addestrato (es. yolov8m.pt o quello che usi)
-    # Nota: Assicurati che il nome del modello sia corretto (yolo12m non esiste ufficialmente, forse intendi v8 o v11?)
-    model_name = 'yolo12m.pt' 
+    
+    model_name = 'yolov8m.pt' 
     model = YOLO(MODEL_PATH / model_name) 
 
     print(f"Avvio training di {model_name}...")
     
     # Parametri training
     results = model.train(
-        data=str(dataset_yaml),
-        epochs=50,             # Regola in base al tempo (50-100 è buono)
-        imgsz=640,             # O 1280 se hai GPU potente e vuoi vedere i piccoli dettagli
-        batch=8,              # Regola in base alla VRAM
-        project=str(MODEL_PATH / "training_runs"),
-        name='soccernet_finetune',
-        exist_ok=True,
-        device=0,              # GPU id
-        plots=True,
-        patience=10,            # Early stopping se non migliora per 10 epoche
-        cache=False,
-        workers=4
-    )
+    data=str(dataset_yaml),
+    epochs=100,             
+    imgsz=1920,             # Se hai memoria, prova 1536
+    batch=2,               # Auto-batch: YOLO cercherà il massimo possibile per i tuoi 12GB
+    project=str(MODEL_PATH / "training_runs"),
+    name='soccernet_v8m_ultra_1920',
+    device=0,
+    optimizer='AdamW',        # Proviamo SGD per una precisione maggiore
+    lr0=0.01,
+    lrf=0.01,
+    momentum=0.937,
+    weight_decay=0.0005,
+    workers=2,
+    
+    # Augmentation "Aggressiva"
+    mosaic=1.0,
+    mixup=0.5,              # Aumentato per gestire occlusioni
+    copy_paste=0.5,         # Aumentato per giocatori sovrapposti
+    hsv_h=0.015,            # Variazioni di colore (maglie diverse)
+    hsv_s=0.7,
+    hsv_v=0.4,
+    degrees=10.0,           # Piccole rotazioni
+    scale=0.5,
+    shear=2.0,              # Deformazione prospettica (utile per i bordi del campo)
+    perspective=0.0001,
+    
+    # Parametri di controllo
+    patience=20,           
+    close_mosaic=20,        # Più tempo per rifinire senza augmentation distruttiva
+    val=True,
+    amp=True,               # Automatic Mixed Precision (fondamentale su RTX 5070)
+)
     
     print("Training completato.")
     # Il modello migliore sarà salvato in models/training_runs/soccernet_finetune/weights/best.pt

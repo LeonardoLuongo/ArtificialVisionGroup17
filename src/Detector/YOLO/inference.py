@@ -10,7 +10,7 @@ def run_detection_and_save_txt():
     # Carica il modello
     DEVICE = get_best_device()
     model_name = 'best.pt'  # Puoi cambiare con il percorso del tuo modello
-    model = YOLO(MODEL_PATH / "training_runs" / "soccernet_blur_final" / "weights" / model_name) 
+    model = YOLO(MODEL_PATH / "training_runs" / "soccernet_v8m_ultra3" / "weights" / model_name) 
     model.to(DEVICE)
     print(f"Modello caricato su: {model.device}")
 
