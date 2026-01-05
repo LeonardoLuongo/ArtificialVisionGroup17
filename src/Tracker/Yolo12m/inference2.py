@@ -10,8 +10,7 @@ from scipy.optimize import linear_sum_assignment
 from collections import deque
 import json
 import timm
-
-
+import torch.nn as nn
 # Setup path
 current_file = Path(__file__).resolve()
 project_root = current_file.parent.parent.parent.parent
@@ -24,14 +23,7 @@ import torchreid
 # --- CONFIGURAZIONE ---
 CONF_THRES = 0.1           
 MAX_ENTITIES = 28           
-VERIFY_THRESHOLD = 0.45     
-MATCH_THRESHOLD = 0.65      
-SPATIAL_LIMIT = 100         
 GALLERY_SIZE = 20           
-# --- NUOVI PARAMETRI PROVISIONAL ---
-PROVISIONAL_FRAMES = 1      # K: Quanti frame aspettare prima di decidere
-PROVISIONAL_THRESH = 0.70   # Soglia severa per il merge ritardato
-# ----------------------
 
 # Funzione per caricare le ROI e verificare la posizione dei giocatori
 def count_players_in_rois(boxes_xyxy, roi_data, img_w, img_h):
@@ -60,74 +52,38 @@ def count_players_in_rois(boxes_xyxy, roi_data, img_w, img_h):
                 counts[roi_id] += 1
     return counts
 
-
 class ReIDExtractor:
     def __init__(self, weights_path, device='cuda'):
         self.device = device
         weights_str = str(weights_path).lower()
+        self.resize_wh = (128, 256) # Default OSNet
         
-        # --- 1. SELEZIONE ARCHITETTURA ---
         if 'vit' in weights_str:
-            self.resize_wh = (224, 224)
-            model_name = 'vit_l_16' if 'l_16' in weights_str else 'vit_b_16'
-            print(f"--> Rilevato ViT. Model: {model_name} | Input: {self.resize_wh}")
+            self.resize_wh = (224, 224) 
+            if 'l_16' in weights_str: model_name = 'vit_l_16'
+            elif 'b_16' in weights_str: model_name = 'vit_b_16'
+            else: model_name = 'vit_b_16'
+        elif 'ain' in weights_str:
+            model_name = 'osnet_ain_x1_0'
         else:
-            # Default OSNet per il calcio (Migliore)
-            self.resize_wh = (128, 256)
             model_name = 'osnet_x1_0'
-            print(f"--> Rilevato OSNet. Model: {model_name} | Input: {self.resize_wh}")
+            
+        print(f"--> ReID Model: {model_name} | Input: {self.resize_wh}")
 
-        # Creazione modello vuoto
         try:
-            # num_classes=1000 è dummy, tanto scarteremo il layer finale
             self.model = torchreid.models.build_model(name=model_name, num_classes=1000, pretrained=False)
         except KeyError:
             print(f"ERRORE: Modello {model_name} non supportato.")
             sys.exit(1)
 
-        # --- 2. CARICAMENTO E PULIZIA PESI ---
         if weights_path and os.path.exists(weights_path):
-            try:
-                checkpoint = torch.load(weights_path, map_location='cpu')
-                
-                # Gestione vari formati di salvataggio
-                if isinstance(checkpoint, dict):
-                    if 'state_dict' in checkpoint: state_dict = checkpoint['state_dict']
-                    elif 'model' in checkpoint: state_dict = checkpoint['model']
-                    else: state_dict = checkpoint
-                else:
-                    state_dict = checkpoint
-
-                new_state_dict = {}
-                for k, v in state_dict.items():
-                    # Pulizia prefissi comuni
-                    if k.startswith('module.'): k = k[7:]
-                    if k.startswith('model.'): k = k[6:] # Rimuove 'model.' se c'è
-
-                    # --- FILTRO FONDAMENTALE ---
-                    # Se la chiave appartiene al classificatore, LA SALTIAMO.
-                    # Questo evita l'errore di Size Mismatch (161443 vs 1000)
-                    if 'classifier' in k or 'fc' in k or 'head' in k:
-                        continue
-                    
-                    new_state_dict[k] = v
-
-                # Carichiamo solo il backbone (strict=False permette di ignorare il classifier mancante)
-                missing, unexpected = self.model.load_state_dict(new_state_dict, strict=False)
-                
-                print(f"✅ Pesi caricati correttamente (Backbone only). Keys ignorate/mancanti: {len(missing)}")
-                
-            except Exception as e:
-                print(f"ERRORE GRAVE nel caricamento pesi: {e}")
-                sys.exit(1)
-        else:
-            print("WARNING: Nessun peso trovato!")
+            torchreid.utils.load_pretrained_weights(self.model, weights_path)
             
         self.model.to(device).eval()
         self.mean = torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1).to(self.device)
         self.std = torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1).to(self.device)
 
-    @torch.no_grad()
+    @torch.no_grad() 
     def get_embeddings(self, frame, bboxes_xyxy):
         if len(bboxes_xyxy) == 0: return np.array([])
         crops = []
@@ -135,28 +91,19 @@ class ReIDExtractor:
         
         for box in bboxes_xyxy:
             x1, y1, x2, y2 = map(int, box)
-            # Clip coordinate
             x1, y1 = max(0, x1), max(0, y1)
             x2, y2 = min(w_img, x2), min(h_img, y2)
-            
             crop = frame[y1:y2, x1:x2]
-            
-            # Gestione crop vuoti o invalidi
-            if crop.size == 0 or crop.shape[0] == 0 or crop.shape[1] == 0:
-                crop = np.zeros((self.resize_wh[1], self.resize_wh[0], 3), dtype=np.uint8)
-            else:
-                crop = cv2.resize(crop, self.resize_wh) # (128, 256) per OSNet
-                
+            if crop.size == 0: crop = np.zeros((self.resize_wh[1], self.resize_wh[0], 3), dtype=np.uint8)
+            crop = cv2.resize(crop, self.resize_wh)
             crop = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
             crops.append(np.transpose(crop, (2, 0, 1)))
 
-        if not crops: return np.array([])
-        
         input_t = torch.from_numpy(np.array(crops)).float().to(self.device) / 255.0
         input_t = (input_t - self.mean) / self.std
-        
-        # Estrazione feature
         features = self.model(input_t)
+        # --- AGGIUNTA FONDAMENTALE: NORMALIZZAZIONE L2 ---
+        features = torch.nn.functional.normalize(features, p=2, dim=1)
         return features.cpu().numpy()
 
 
@@ -217,250 +164,207 @@ class CameraCompensator:
 class GlobalTrack:
     def __init__(self, global_id, embedding, bbox, frame_id, conf, state='probation'):
         self.global_id = global_id
-        self.gallery = [] 
-        self.max_gallery_size = 50 
+        self.gallery = deque(maxlen=30) # Usiamo deque per efficienza
         
-        # Stato: 'probation' (accumulo info) o 'locked' (decisione presa)
         self.state = state 
-        self.probation_age = 0  # Contatore frame in probation
+        self.probation_age = 0
         
-        # Inizializziamo gallery se decente
+        # Gallery Update
         if conf > 0.60:
             self.gallery.append(embedding)
             
         self.last_seen_frame = frame_id
         self.last_bbox = np.array(bbox, dtype=np.float32)
-    
+        self.velocity = np.zeros(2, dtype=np.float32) # Per stima posizione futura
+
     def update(self, embedding, bbox, frame_id, conf):
+        # Calcolo velocità semplice (bbox center delta)
+        curr_center = (bbox[:2] + bbox[2:]) / 2.0
+        prev_center = (self.last_bbox[:2] + self.last_bbox[2:]) / 2.0
+        
+        dt = frame_id - self.last_seen_frame
+        if dt > 0 and dt < 10:
+            current_vel = (curr_center - prev_center) / dt
+            # Media mobile esponenziale per la velocità
+            self.velocity = 0.7 * self.velocity + 0.3 * current_vel
+            
         self.last_seen_frame = frame_id
         self.last_bbox = np.array(bbox, dtype=np.float32)
         
         if self.state == 'probation':
             self.probation_age += 1
+            if self.probation_age > 10: self.state = 'locked'
         
-        # AGGIORNAMENTO GALLERY
-        # In probation: Accumuliamo tutto ciò che è nitido per decidere meglio
-        # In locked: Accumuliamo solo pose nuove per robustezza futura
         if conf > 0.60:
-            if not self.gallery:
-                self.gallery.append(embedding)
-            else:
-                sims = self.compute_sim_vector(embedding)
-                max_sim = np.max(sims)
-                
-                # Se Locked: solo se diverso (0.95)
-                # Se Probation: siamo più avidi, vogliamo capire chi è
-                thresh = 0.95 if self.state == 'locked' else 0.98
-                
-                if max_sim < thresh: 
-                    if len(self.gallery) >= self.max_gallery_size:
-                        self.gallery.pop(0) 
-                    self.gallery.append(embedding)
+            self.gallery.append(embedding)
 
-    def compute_sim(self, candidate_emb):
-        if not self.gallery: return 0.0 
-        gallery_arr = np.array(self.gallery)
-        candidate_emb = candidate_emb.reshape(1, -1)
-        dists = cdist(candidate_emb, gallery_arr, metric='cosine')
-        return 1.0 - np.min(dists)
+    def predict_location(self, target_frame_id):
+        # Predizione lineare semplice della posizione
+        dt = target_frame_id - self.last_seen_frame
+        if dt <= 0: return self.last_bbox
+        
+        # Prediciamo solo il centro, manteniamo w,h
+        center = (self.last_bbox[:2] + self.last_bbox[2:]) / 2.0
+        pred_center = center + (self.velocity * dt)
+        
+        w = self.last_bbox[2] - self.last_bbox[0]
+        h = self.last_bbox[3] - self.last_bbox[1]
+        
+        return np.array([
+            pred_center[0] - w/2,
+            pred_center[1] - h/2,
+            pred_center[0] + w/2,
+            pred_center[1] + h/2
+        ], dtype=np.float32)
 
-    def compute_sim_vector(self, candidate_emb):
-        if not self.gallery: return np.array([0.0])
+    def compute_distance(self, candidate_emb):
+        # Distanza minima coseno rispetto alla gallery (Best Match Strategy)
+        if not self.gallery: return 1.0
         gallery_arr = np.array(self.gallery)
         dists = cdist(candidate_emb.reshape(1, -1), gallery_arr, metric='cosine')
-        return 1.0 - dists[0]
+        return np.min(dists) # 0 = identico, 1 = diverso
 
-
+# --- NUOVO ROBUST MAPPER CON MATRICE UNGHERESE ---
 class RobustMapper:
     def __init__(self):
         self.botsort_to_global = {} 
         self.tracks = {} 
         self.next_global_id = 1
-        # --- COMPENSATORE CAMERA ---
         self.gmc = CameraCompensator()
-        # CONFIGURAZIONE
-        self.PROBATION_FRAMES = 8   
-        self.MERGE_THRESH = 0.70    
-        self.EARLY_MERGE_THRESH = 0.85 
         
-        # SOGLIA RECUPERO IMMEDIATO
-        # Deve essere alta. Se recuperiamo l'ID sbagliato qui, facciamo un disastro.
-        self.RECOVERY_THRESH = 0.75 
-
+        # --- TUNING PARAMETRI ---
+        self.SPATIAL_GATE_PIXELS = 150  
+        self.MAX_TIME_LOST = 600        
+        self.MATCH_THRESH_REID = 0.25   
+        
     def process_frame(self, botsort_ids, embeddings, boxes, confs, frame_id, current_frame_img):
-        # 1. Update GMC e Trasforma i BBox vecchi
+        # 1. Update Camera Motion
         transform_m = self.gmc.update_and_get_transform(current_frame_img)
         
-        # Aggiorniamo TUTTE le posizioni note applicando lo spostamento della camera
+        # Applica trasformazione ai track esistenti
         for gid, track in self.tracks.items():
             track.last_bbox = self.gmc.apply_transform(track.last_bbox, transform_m)
 
-        current_centroids = (boxes[:, :2] + boxes[:, 2:]) / 2.0
-        num_dets = len(botsort_ids)
+        # Liste di indici per gestire il matching
+        det_indices = list(range(len(botsort_ids)))
+        unmatched_dets = []
         
-        active_global_ids = set() 
+        # --- FASE 1: HARD LINK (BotSORT Continuity) ---
+        active_track_ids = set()
         
-        mapped_indices = []
-        unmapped_indices = []
-
-        # --- FASE 1: GESTIONE LINK ESISTENTI (BotSORT Priority) ---
-        for i in range(num_dets):
+        # NOTA: Iteriamo basandoci sull'ordine in cui arrivano (spesso ordinati per confidenza nel main)
+        for i in det_indices:
             bid = botsort_ids[i]
             
+            # Verifichiamo se c'è un link storico
             if bid in self.botsort_to_global:
                 gid = self.botsort_to_global[bid]
                 
-                # Check Duplicati (One-to-One)
-                if gid in active_global_ids:
-                    del self.botsort_to_global[bid]
-                    unmapped_indices.append(i)
-                    continue 
-
-                track = self.tracks.get(gid)
-                if track:
-                    active_global_ids.add(gid)
-                    track.update(embeddings[i], boxes[i], frame_id, confs[i])
+                # CHECK CRUCIALE: L'ID Globale è ancora vivo e NON è già stato assegnato in questo frame?
+                if gid in self.tracks and gid not in active_track_ids:
+                    # Assegnazione valida
+                    self.tracks[gid].update(embeddings[i], boxes[i], frame_id, confs[i])
+                    active_track_ids.add(gid)
+                
+                elif gid in active_track_ids:
+                    # DUPLICATO RILEVATO: 
+                    # Questo Global ID è già stato preso da un altro BotSort ID in questo frame.
+                    # Questa detection (bid) è probabilmente un 'ghost' o un errore di split di BotSORT.
+                    # La trattiamo come unmatched: verrà associata a un altro ID o ne creerà uno nuovo.
+                    unmatched_dets.append(i)
                     
-                    # Se il track è locked o probation avanzato, resettiamo il guess
-                    # perché ormai "è lui"
-                    if track.state == 'locked':
-                        track.best_guess_id = None
                 else:
+                    # Il track era stato cancellato dal garbage collector ma è rimasto nel mapping
                     del self.botsort_to_global[bid]
-                    unmapped_indices.append(i)
+                    unmatched_dets.append(i)
             else:
-                unmapped_indices.append(i)
+                unmatched_dets.append(i)
 
-        # --- FASE 2: VALUTAZIONE PROBATION (Il cuore della logica) ---
-        # Controlliamo se qualche track in probation è pronto per essere promosso o mergiato
+        # --- FASE 2: RECUPERO (HUNGARIAN ALGORITHM) ---
+        candidate_tracks = []
+        candidate_gids = [] # Lista parallela per tenere traccia dei GID
         
-        # Copiamo le chiavi per poter modificare il dizionario durante il loop
-        current_bids = list(self.botsort_to_global.keys())
+        for gid, track in self.tracks.items():
+            # Consideriamo solo track NON aggiornati nella fase 1
+            if gid not in active_track_ids:
+                if (frame_id - track.last_seen_frame) < self.MAX_TIME_LOST:
+                    candidate_tracks.append(track)
+                    candidate_gids.append(gid)
         
-        for bid in current_bids:
-            gid = self.botsort_to_global[bid]
-            track = self.tracks.get(gid)
-            if not track: continue # Garbage collected
-
-            if track.state == 'probation':
-                # CERCHIAMO MATCH CON I DORMANT (Vecchi ID non attivi ora)
-                best_match = None
-                max_sim = -1.0
-                if track.gallery:
-                    curr_emb = track.gallery[-1]
-                    for c_gid, c_track in self.tracks.items():
-                        if c_gid == gid or c_gid in active_global_ids or c_track.state != 'locked': continue
-                        dt = frame_id - c_track.last_seen_frame
-                        if dt > 1500: continue # Timeout temporale ampio
-                        
-                        # Distanza spaziale (ora corretta dal GMC!)
-                        dist = np.linalg.norm((track.last_bbox[:2]+track.last_bbox[2:])/2 - 
-                                            (c_track.last_bbox[:2]+c_track.last_bbox[2:])/2)
-                        
-                        # Soglia spaziale dinamica
-                        if dist < (150 + 60 * dt): 
-                            sim = c_track.compute_sim(curr_emb)
-                            if sim > max_sim: max_sim = sim; best_match = c_track
-                
-                target = -1
-                if max_sim > self.EARLY_MERGE_THRESH: target = best_match.global_id
-                elif track.probation_age >= self.PROBATION_FRAMES:
-                    if max_sim > self.MERGE_THRESH: target = best_match.global_id
-                    else: track.state = 'locked'
-                
-                if target != -1:
-                    self.botsort_to_global[bid] = target
-                    tgt_t = self.tracks[target]
-                    tgt_t.last_seen_frame = track.last_seen_frame
-                    tgt_t.last_bbox = track.last_bbox
-                    tgt_t.gallery.extend(track.gallery)
-                    if len(tgt_t.gallery) > tgt_t.max_gallery_size: tgt_t.gallery = tgt_t.gallery[-tgt_t.max_gallery_size:]
-                    del self.tracks[gid]
-                    if gid in active_global_ids: active_global_ids.remove(gid)
-                    active_global_ids.add(target)
-
-        # --- FASE 2.5: RECUPERO IMMEDIATO (La tua richiesta) ---
-        # Prima di creare nuovi ID, cerchiamo tra i 'Dormant' (quelli non attivi ora)
-        
-        final_new_indices = [] # Quelli che proprio non troviamo
-        
-        # Ordiniamo gli unmapped per confidence (i migliori scelgono per primi)
-        # Così se abbiamo un detection buono e uno sfocato, quello buono si prende l'ID giusto.
-        unmapped_indices.sort(key=lambda idx: confs[idx], reverse=True)
-
-        for i in unmapped_indices:
-            emb = embeddings[i]
-            conf = confs[i]
-            bbox = boxes[i]
-            centroid = (bbox[:2] + bbox[2:]) / 2.0
-            bid = botsort_ids[i]
+        if len(unmatched_dets) > 0 and len(candidate_tracks) > 0:
+            cost_matrix = np.ones((len(unmatched_dets), len(candidate_tracks)), dtype=np.float32)
             
-            # Recuperiamo solo se l'immagine è decente
-            if conf > 0.55:
-                best_gid = -1
-                best_sim = -1.0
+            for r, det_idx in enumerate(unmatched_dets):
+                det_emb = embeddings[det_idx]
+                det_box = boxes[det_idx]
+                det_center = (det_box[:2] + det_box[2:]) / 2.0
                 
-                # Cerca tra TUTTI i track disponibili
-                for gid, track in self.tracks.items():
-                    # 1. Non deve essere già in campo (One-to-One globale)
-                    if gid in active_global_ids: continue
+                for c, track in enumerate(candidate_tracks):
+                    # 1. Gate Spaziale
+                    pred_box = track.predict_location(frame_id)
+                    pred_center = (pred_box[:2] + pred_box[2:]) / 2.0
                     
-                    # 2. Filtro Temporale (non recuperare fantasmi di un'ora fa)
+                    dist_px = np.linalg.norm(det_center - pred_center)
+                    
                     dt = frame_id - track.last_seen_frame
-                    if dt > 900: continue # 30 secondi
+                    gate_radius = self.SPATIAL_GATE_PIXELS + (10 * dt)
                     
-                    # Distanza con GMC applicato
-                    track_center = (track.last_bbox[:2] + track.last_bbox[2:]) / 2.0
-                    dist = np.linalg.norm(centroid - track_center)
+                    if dist_px < gate_radius:
+                        # 2. Distanza ReID
+                        reid_dist = track.compute_distance(det_emb)
+                        cost_matrix[r, c] = reid_dist + (dist_px / 2000.0)
+                    else:
+                        cost_matrix[r, c] = 1000.0 
+
+            row_inds, col_inds = linear_sum_assignment(cost_matrix)
+            
+            for r, c in zip(row_inds, col_inds):
+                cost = cost_matrix[r, c]
+                if cost < self.MATCH_THRESH_REID:
+                    det_idx = unmatched_dets[r]
+                    track_gid = candidate_gids[c] # Recuperiamo il GID corretto
+                    bid = botsort_ids[det_idx]
                     
-                    if dist < (150 + 50 * dt):
-                        sim = track.compute_sim(emb)
-                        if sim > best_sim:
-                            best_sim = sim
-                            best_gid = gid
+                    # Link trovato
+                    self.botsort_to_global[bid] = track_gid
+                    self.tracks[track_gid].update(embeddings[det_idx], boxes[det_idx], frame_id, confs[det_idx])
+                    active_track_ids.add(track_gid)
+                    
+                    unmatched_dets[r] = -1 
+
+        # --- FASE 3: NUOVI TRACK ---
+        for i in unmatched_dets:
+            if i == -1: continue 
+            
+            if confs[i] > 0.40:
+                bid = botsort_ids[i]
+                new_gid = self.next_global_id
+                self.next_global_id += 1
                 
-                # CHECK SOGLIA
-                if best_sim > self.RECOVERY_THRESH:
-                    # TROVATO! È LUI!
-                    self.botsort_to_global[bid] = best_gid
-                    self.tracks[best_gid].update(emb, bbox, frame_id, conf)
-                    active_global_ids.add(best_gid)
-                    continue # Passa al prossimo unmapped
+                self.tracks[new_gid] = GlobalTrack(new_gid, embeddings[i], boxes[i], frame_id, confs[i])
+                self.botsort_to_global[bid] = new_gid
+                active_track_ids.add(new_gid)
 
-            # Se siamo qui, non abbiamo trovato match validi
-            final_new_indices.append(i)
-
-        # --- FASE 3: NUOVI ID (Solo per chi non ha trovato casa) ---
-        for i in final_new_indices:
-            bid = botsort_ids[i]
-            emb = embeddings[i]
-            conf = confs[i]
-            centroid = current_centroids[i]
-            
-            new_gid = self.next_global_id
-            self.next_global_id += 1
-            
-            # Nasce in Probation e cercherà subito un Best Guess al prossimo loop
-            self.tracks[new_gid] = GlobalTrack(new_gid, embeddings[i], boxes[i], frame_id, confs[i], state='probation')
-            self.botsort_to_global[bid] = new_gid
-            
-            # Aggiungiamo ai globali attivi per correttezza (anche se loop finito)
-            active_global_ids.add(new_gid)
-
-        # --- OUTPUT & CLEANUP ---
+        self._garbage_collection(frame_id)
+        
         final_ids = []
         for bid in botsort_ids:
-            final_ids.append(self.botsort_to_global.get(bid, -1))
-        
-        self._garbage_collection(frame_id)
+            # Recupera ID, se non esiste (appena scartato o conf bassa) ritorna -1
+            gid = self.botsort_to_global.get(bid, -1)
+            # Controllo finale di sicurezza: ritorniamo l'ID solo se è attivo (è stato confermato in questo frame)
+            if gid in active_track_ids:
+                final_ids.append(gid)
+            else:
+                final_ids.append(-1)
+                
         return final_ids
 
     def _garbage_collection(self, frame_id):
         to_del = []
         for gid, t in self.tracks.items():
-            # Teniamo i Locked molto a lungo per permettere il recupero (Fase 2.5)
-            timeout = 1500 if t.state == 'locked' else 60 
-            if (frame_id - t.last_seen_frame) > timeout:
+            dt = frame_id - t.last_seen_frame
+            limit = 1500 if t.state == 'locked' else 60
+            if dt > limit:
                 to_del.append(gid)
         
         for gid in to_del:
@@ -477,7 +381,7 @@ def run_hybrid_tracking():
     
     reid_extractor = ReIDExtractor(str(REID_WEIGHTS), DEVICE)
     
-    output_folder = TRACKER_OUTPUT_DIR / "final_provisional_tracker_osnet"
+    output_folder = TRACKER_OUTPUT_DIR / "final_provisional_tracker2"
     output_folder.mkdir(parents=True, exist_ok=True)
 
     base_path = DATASET_TR23_TEST
