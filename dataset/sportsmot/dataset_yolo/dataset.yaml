@@ -1,6 +1,0 @@
-path: C:\Users\cesco\Documents\GitHub\ArtificialVisionGroup17\dataset\sportsmot\dataset_yolo
-train: images/train
-val: images/val
-test: images/test
-names:
-  0: player

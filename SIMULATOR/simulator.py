@@ -203,7 +203,6 @@ def simulate_and_eval_hota05(
     window_name: str = "GT (left) | PRED (right)",
     tmp_root: str = "./_tmp_trackeval_soccernet",
     show_window: bool = True,
-    n_videos: int = -1,
 ):
     video_ids = list_video_ids(dataset_root)
     if not video_ids:
@@ -365,7 +364,6 @@ def simulate_and_eval_hota05(
         tmp_root=tmp_root,
         benchmark="SNMOT",
         tracker_name="test",
-        n_videos=n_videos
     )
 
     # compute HOTA@0.50 using TrackEval
@@ -411,19 +409,11 @@ def simulate_and_eval_hota05(
 
 
 if __name__ == "__main__":
-    predictions_root="out/tracker_results/final_results2_norm2"
-    # finished = False
-    # n_videos = len(glob.glob(predictions_root + "/tracking*")) # number of videos in the dataset
-    # n_videos = n_videos if finished else n_videos - 1
-    n_videos = 49
-    trks = glob.glob(predictions_root + "/tracking*")[:n_videos]
-    print(f"Evaluating {len(trks)} prediction files from: {predictions_root}")
     simulate_and_eval_hota05(
-        dataset_root="dataset/tracking-2023/test",
-        predictions_root=predictions_root,
-        group="17",
-        fps=25.0,
-        split="val",
-        show_window=False,
-        n_videos=n_videos
+        dataset_root="lecture_example_from_training/test_set/videos",
+        predictions_root="lecture_example_from_training/Predictions_folder",
+        group="01",
+        fps=200.0,
+        split="test",
+        show_window=True,
     )

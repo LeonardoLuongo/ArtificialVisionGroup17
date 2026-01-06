@@ -147,7 +147,6 @@ def build_trackeval_structure(
     tmp_root: str,
     benchmark: str = "SNMOT",
     tracker_name: str = "test",
-    n_videos: int = -1
 ) -> Tuple[str, str, str]:
     """
     Creates:
@@ -177,12 +176,7 @@ def build_trackeval_structure(
     os.makedirs(gt_bs, exist_ok=True)
     os.makedirs(tr_bs, exist_ok=True)
 
-    # MODIFIED
-    if n_videos > 0:
-        seqs = list_video_ids(dataset_root)[:n_videos] # list of numeric folder names in dataset_root
-    else:
-        seqs = list_video_ids(dataset_root)
-
+    seqs = list_video_ids(dataset_root) # list of numeric folder names in dataset_root
     if not seqs:
         raise FileNotFoundError(f"No numeric video folders found in: {dataset_root}")
 
@@ -272,16 +266,6 @@ def compute_hota_at_05_trackeval(
     alphas = np.array(hota_metric.array_labels, dtype=float) # get array of alphas used in HOTA curve
     idx = int(np.where(np.isclose(alphas, 0.5))[0][0]) # find index of alpha=0.50 
 
-    # 1. Create a reference to the specific metrics dictionary
-    metrics = output_res["MotChallenge2DBox"][tracker_name]["COMBINED_SEQ"]["pedestrian"]["HOTA"]
-
-    # 2. Now the print statements are much cleaner and less prone to syntax errors
-    print(f"DetA@0.5:  {float(metrics['DetA'][idx]):.6f}")
-    print(f"DetRe@0.5: {float(metrics['DetRe'][idx]):.6f}")
-    print(f"DetPr@0.5: {float(metrics['DetPr'][idx]):.6f}")
-    print(f"AssA@0.5:  {float(metrics['AssA'][idx]):.6f}")
-    print(f"AssRe@0.5: {float(metrics['AssRe'][idx]):.6f}")
-    print(f"AssPr@0.5: {float(metrics['AssPr'][idx]):.6f}")
-
-    # 3. Return the specific HOTA value
-    return float(metrics["HOTA"][idx])
+    # SoccerNet-style extraction uses COMBINED_SEQ and class key "pedestrian"
+    hota_curve = output_res["MotChallenge2DBox"][tracker_name]["COMBINED_SEQ"]["pedestrian"]["HOTA"]["HOTA"] # from the output results, get HOTA curve for combined sequences and pedestrian class 
+    return float(hota_curve[idx]) # return HOTA@0.50 value as float
