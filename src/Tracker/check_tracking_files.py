@@ -69,5 +69,5 @@ def check_tracking_files(folder_path):
     print(f"Totale cumulativo ID unici trovati: {total_global_ids}")
 
 # Inserisci qui il percorso della tua cartella
-path = './out/tracker_results/final_results2_rgb_norm_FR_VIT'
+path = './out/tracker_results/final_results3'
 check_tracking_files(path)
