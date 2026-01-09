@@ -410,10 +410,10 @@ def simulate_and_eval_hota05(
 
 if __name__ == "__main__":
     simulate_and_eval_hota05(
-        dataset_root="lecture_example_from_training/test_set/videos",
-        predictions_root="lecture_example_from_training/Predictions_folder",
-        group="01",
-        fps=200.0,
+        dataset_root="dataset/tracking-2023/test",
+        predictions_root="out/tracker_results/final2",
+        group="17",
+        fps=25.0,
         split="test",
-        show_window=True,
+        show_window=False,
     )
