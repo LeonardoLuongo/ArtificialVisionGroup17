@@ -2,10 +2,12 @@
 
 **Artificial Vision contest · Group 17 · MSc in Computer Engineering, University of Salerno (A.Y. 2025/2026)**
 
+> The full code lives on the [`main-4`](https://github.com/LeonardoLuongo/ArtificialVisionGroup17/tree/main-4) branch.
+
 A computer vision pipeline that detects every player, goalkeeper and referee in broadcast football video, keeps a **persistent identity** for each of them while the camera pans and zooms, and counts how many players stand inside two regions of the pitch in every frame.
 
-![Ground truth (left) vs. our prediction (right)](docs/images/gt_vs_pred.png)
-<sub>Left: ground truth. Right: our output. Boxes are coloured by region (blue = ROI 1, red = ROI 2, yellow = outside). Both sides count 5 and 4 players.</sub>
+![Ground truth (left) vs. our tracker (right) on a SoccerNet test clip](https://raw.githubusercontent.com/LeonardoLuongo/ArtificialVisionGroup17/main-4/docs/images/tracking_demo.gif)
+<sub>Left: ground truth. Right: our output. Boxes are coloured by region (blue = ROI 1, red = ROI 2, yellow = outside); the big numbers are the per-region counts.</sub>
 
 | HOTA@0.5 | DetA@0.5 | AssA@0.5 | nMAE | **PTBS** |
 |:---:|:---:|:---:|:---:|:---:|
@@ -50,7 +52,7 @@ $$nMAE = \frac{10 - \min(10,\ MAE)}{10}$$
 
 ## Pipeline overview
 
-![Pipeline](docs/images/pipeline.png)
+![Pipeline](https://raw.githubusercontent.com/LeonardoLuongo/ArtificialVisionGroup17/main-4/docs/images/pipeline.png)
 
 1. **Detect**: a YOLOv8m fine-tuned on SoccerNet finds every person on the pitch.
 2. **Track**: BoT-SORT with global camera-motion compensation links boxes from one frame to the next.
@@ -58,7 +60,7 @@ $$nMAE = \frac{10 - \min(10,\ MAE)}{10}$$
 4. **Remember**: our **RobustMapper** maps BoT-SORT's short-lived IDs to persistent global IDs. It merges fragmented tracks and recovers players who left the frame.
 5. **Count**: each tracked box is assigned to a ROI using its base-center point.
 
-Everything for inference is in [`src/Tracker/Yolo12m/inference.py`](src/Tracker/Yolo12m/inference.py).
+Everything for inference is in [`src/Tracker/Yolo12m/inference.py`](https://github.com/LeonardoLuongo/ArtificialVisionGroup17/blob/main-4/src/Tracker/Yolo12m/inference.py).
 
 ---
 
@@ -66,11 +68,11 @@ Everything for inference is in [`src/Tracker/Yolo12m/inference.py`](src/Tracker/
 
 | Step | Script | What it does |
 |---|---|---|
-| Download | [`src/Dataset/download_dataset.py`](src/Dataset/download_dataset.py) | Fetches `tracking-2023` (train / test / challenge) via the SoccerNet API |
-| Clean GT | [`src/Dataset/clean_gt.py`](src/Dataset/clean_gt.py) | Keeps only `player`, `goalkeeper`, `referee` (drops the ball) and maps them to one detector class, keeping track IDs for evaluation |
-| Convert | [`src/Dataset/convert_to_yolo.py`](src/Dataset/convert_to_yolo.py) | Converts to YOLO format and keeps 1 frame out of `TRAIN_SUBSAMPLE_RATE`, which was **3** for the final detector. At 25 fps consecutive frames are nearly identical, so this cuts the training set by 66% at little cost in visual variety |
-| Split | [`src/Dataset/create_splits.py`](src/Dataset/create_splits.py) | Deterministic **80/20 split by sequence** through manifest files, so no clip appears in both train and validation |
-| ROI GT | [`src/Dataset/forNMAE/`](src/Dataset/forNMAE) | Generates random, non-overlapping ROI pairs and the matching behavior ground truth, so nMAE can be measured locally |
+| Download | [`src/Dataset/download_dataset.py`](https://github.com/LeonardoLuongo/ArtificialVisionGroup17/blob/main-4/src/Dataset/download_dataset.py) | Fetches `tracking-2023` (train / test / challenge) via the SoccerNet API |
+| Clean GT | [`src/Dataset/clean_gt.py`](https://github.com/LeonardoLuongo/ArtificialVisionGroup17/blob/main-4/src/Dataset/clean_gt.py) | Keeps only `player`, `goalkeeper`, `referee` (drops the ball) and maps them to one detector class, keeping track IDs for evaluation |
+| Convert | [`src/Dataset/convert_to_yolo.py`](https://github.com/LeonardoLuongo/ArtificialVisionGroup17/blob/main-4/src/Dataset/convert_to_yolo.py) | Converts to YOLO format and keeps 1 frame out of `TRAIN_SUBSAMPLE_RATE`, which was **3** for the final detector. At 25 fps consecutive frames are nearly identical, so this cuts the training set by 66% at little cost in visual variety |
+| Split | [`src/Dataset/create_splits.py`](https://github.com/LeonardoLuongo/ArtificialVisionGroup17/blob/main-4/src/Dataset/create_splits.py) | Deterministic **80/20 split by sequence** through manifest files, so no clip appears in both train and validation |
+| ROI GT | [`src/Dataset/forNMAE/`](https://github.com/LeonardoLuongo/ArtificialVisionGroup17/blob/main-4/src/Dataset/forNMAE) | Generates random, non-overlapping ROI pairs and the matching behavior ground truth, so nMAE can be measured locally |
 
 ---
 
@@ -80,11 +82,11 @@ Tracking-by-detection can't recover a player the detector never saw, so we start
 
 **Benchmark of four YOLO families** (validation set):
 
-![Detector comparison](docs/images/detector_comparison.png)
+![Detector comparison](https://raw.githubusercontent.com/LeonardoLuongo/ArtificialVisionGroup17/main-4/docs/images/detector_comparison.png)
 
 YOLO12m scored highest, but only by about 0.25 points of recall over YOLOv8m at a noticeably higher compute cost. **We picked YOLOv8m** as the better trade-off.
 
-**Training choices** ([`src/Detector/YOLO/freezing_train.py`](src/Detector/YOLO/freezing_train.py)):
+**Training choices** ([`src/Detector/YOLO/freezing_train.py`](https://github.com/LeonardoLuongo/ArtificialVisionGroup17/blob/main-4/src/Detector/YOLO/freezing_train.py)):
 
 - **Custom fitness = mAP@50 only.** The contest scores at IoU 0.5, so we overrode Ultralytics' default fitness (which is weighted toward mAP@50-95) to pick `best.pt` on mAP@50. This favours a robust detector over pixel-perfect boxes that the metric ignores.
 - **Backbone freezing** (first 10 layers): keeps the generic features learned on large datasets and adapts only the head to pitches and kits.
@@ -97,7 +99,7 @@ YOLO12m scored highest, but only by about 0.25 points of recall over YOLOv8m at 
 
 We changed the tracker in steps, each time looking at where AssA was failing:
 
-![Tracker comparison](docs/images/tracker_comparison.png)
+![Tracker comparison](https://raw.githubusercontent.com/LeonardoLuongo/ArtificialVisionGroup17/main-4/docs/images/tracker_comparison.png)
 
 | Tracker | HOTA | DetA | AssA | What we learned |
 |---|---:|---:|---:|---|
@@ -110,7 +112,7 @@ AssA improved by **+20 points** over the baseline. Most of the overall gain came
 
 ### Re-ID features
 
-`ReIDExtractor` crops each detection, resizes it to 128×256 and runs **OSNet x1.0** from [sportsreid](sportsreid/README.md), trained on SoccerNet Re-ID. Before using it, we checked that the test split was not used in its training, dropped the classification head (we only need the embeddings) and confirmed it expects RGB input. Output vectors are L2-normalized.
+`ReIDExtractor` crops each detection, resizes it to 128×256 and runs **OSNet x1.0** from [sportsreid](https://github.com/LeonardoLuongo/ArtificialVisionGroup17/blob/main-4/sportsreid/README.md), trained on SoccerNet Re-ID. Before using it, we checked that the test split was not used in its training, dropped the classification head (we only need the embeddings) and confirmed it expects RGB input. Output vectors are L2-normalized.
 
 We also tried a **ViT-B/16** Re-ID model. It was slower and scored worse on the contest metrics, so OSNet stayed.
 
@@ -137,24 +139,31 @@ $$P_{base} = \left(x_{min} + \frac{w}{2},\ y_{min} + h\right)$$
 
 ROI coordinates are scaled from [0, 1] to 1920×1080 pixels, and each player is tested for inclusion in every frame. Because the counts come from stable tracks rather than raw detections, they don't flicker from frame to frame.
 
-The local test set has no ROIs, so [`src/Dataset/forNMAE/2_generate_roi.py`](src/Dataset/forNMAE/2_generate_roi.py) creates them. It places a random first ROI, then makes up to 100 attempts to place a second one that does not overlap it, and uses a fixed safe region if all attempts fail. This way the evaluation never stops for missing annotations.
+The local test set has no ROIs, so [`src/Dataset/forNMAE/2_generate_roi.py`](https://github.com/LeonardoLuongo/ArtificialVisionGroup17/blob/main-4/src/Dataset/forNMAE/2_generate_roi.py) creates them. It places a random first ROI, then makes up to 100 attempts to place a second one that does not overlap it, and uses a fixed safe region if all attempts fail. This way the evaluation never stops for missing annotations.
 
 ---
 
 ## Evaluation tools
 
-[`SIMULATOR/simulator.py`](SIMULATOR/simulator.py) reproduces the contest scoring locally:
+[`SIMULATOR/simulator.py`](https://github.com/LeonardoLuongo/ArtificialVisionGroup17/blob/main-4/SIMULATOR/simulator.py) reproduces the contest scoring locally:
 
 - builds the folder structure TrackEval expects and computes **HOTA@0.5** with the official [TrackEval](https://github.com/JonathonLuiten/TrackEval) library,
-- computes **MAE / nMAE** from the behavior files ([`evaluation_helper.py`](SIMULATOR/evaluation_helper.py)),
+- computes **MAE / nMAE** from the behavior files ([`evaluation_helper.py`](https://github.com/LeonardoLuongo/ArtificialVisionGroup17/blob/main-4/SIMULATOR/evaluation_helper.py)),
 - prints the final **PTBS**,
-- optionally renders a **side-by-side GT vs. prediction video** with ROI-coloured boxes and live counters, like the image at the top of this page.
+- optionally renders a **side-by-side GT vs. prediction video** with ROI-coloured boxes and live counters.
+
+![Simulator frame: ground truth (left) vs. prediction (right)](https://raw.githubusercontent.com/LeonardoLuongo/ArtificialVisionGroup17/main-4/docs/images/gt_vs_pred.png)
+<sub>A frame from the simulator: both sides count 5 players in ROI 1 and 4 in ROI 2.</sub>
 
 ---
 
 ## Getting started
 
 ### 1. Environment
+
+```bash
+git clone -b main-4 https://github.com/LeonardoLuongo/ArtificialVisionGroup17.git
+```
 
 ```bash
 conda env create -f conda/build/requirements.yaml
@@ -164,7 +173,7 @@ conda env create -f conda/build/requirements.yaml
 conda activate soccer_tracking
 ```
 
-Python 3.10, PyTorch ≥ 2.3 with CUDA 12.1, Ultralytics, TrackEval, SoccerNet. The `torchreid` package comes from the bundled [`sportsreid/`](sportsreid) folder:
+Python 3.10, PyTorch ≥ 2.3 with CUDA 12.1, Ultralytics, TrackEval, SoccerNet. The `torchreid` package comes from the bundled [`sportsreid/`](https://github.com/LeonardoLuongo/ArtificialVisionGroup17/blob/main-4/sportsreid) folder:
 
 ```bash
 pip install -e sportsreid
@@ -181,11 +190,11 @@ Model weights are not tracked in git (`*.pt`, `*.pth` are ignored). Place them a
 | File | What it is |
 |---|---|
 | `models/bestyolo8.pt` | our fine-tuned YOLOv8m detector |
-| `models/re-ids/osnet_x1_0.pt` | OSNet x1.0 Re-ID checkpoint from the [sportsreid model zoo](sportsreid/README.md) |
+| `models/re-ids/osnet_x1_0.pt` | OSNet x1.0 Re-ID checkpoint from the [sportsreid model zoo](https://github.com/LeonardoLuongo/ArtificialVisionGroup17/blob/main-4/sportsreid/README.md) |
 
 ### 3. Run inference
 
-Set `base_path` in [`inference.py`](src/Tracker/Yolo12m/inference.py) to the folder with the test sequences (`<seq>/img1/*.jpg` and optional `<seq>/roi.json`), then run:
+Set `base_path` in [`inference.py`](https://github.com/LeonardoLuongo/ArtificialVisionGroup17/blob/main-4/src/Tracker/Yolo12m/inference.py) to the folder with the test sequences (`<seq>/img1/*.jpg` and optional `<seq>/roi.json`), then run:
 
 ```bash
 python src/Tracker/Yolo12m/inference.py
@@ -195,7 +204,7 @@ Results are written to `out/tracker_results/contest_outputs_gr17/`.
 
 ### 4. Evaluate
 
-Set `predictions_root` at the bottom of [`simulator.py`](SIMULATOR/simulator.py), then run:
+Set `predictions_root` at the bottom of [`simulator.py`](https://github.com/LeonardoLuongo/ArtificialVisionGroup17/blob/main-4/SIMULATOR/simulator.py), then run:
 
 ```bash
 python SIMULATOR/simulator.py
@@ -224,7 +233,7 @@ Training ran on RunPod (NVIDIA A5000) and on local RTX 3060 / RTX 5070 GPUs.
 ├── SIMULATOR/                 # local contest scoring (TrackEval HOTA + nMAE) and side-by-side renderer
 ├── sportsreid/                # Re-ID library (torchreid fork with SoccerNet models)
 ├── out/                       # detector and tracker outputs
-└── docs/                      # figures for this README (make_figures.py regenerates them)
+└── docs/                      # figures for this README; render_*.py draw tracker output on real frames
 ```
 
 ---
