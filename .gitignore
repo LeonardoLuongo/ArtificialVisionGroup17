@@ -25,3 +25,4 @@ models/re-ids/osnet_x1_0.pth
 *.tar-10
 out/tracker_results/final2/
 dataset/**/*.zip
+__pycache__

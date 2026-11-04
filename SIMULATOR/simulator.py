@@ -420,10 +420,9 @@ if __name__ == "__main__":
     print(f"Evaluating {len(trks)} prediction files from: {predictions_root}")
     simulate_and_eval_hota05(
         dataset_root="dataset/tracking-2023/test",
-        predictions_root=predictions_root,
+        predictions_root="out/tracker_results/final2",
         group="17",
         fps=25.0,
-        split="val",
+        split="test",
         show_window=False,
-        n_videos=n_videos
     )
