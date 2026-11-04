@@ -1,0 +1,27 @@
+𝗧𝗿𝗮𝗰𝗸𝗶𝗻𝗴 𝗳𝗼𝗼𝘁𝗯𝗮𝗹𝗹 𝗽𝗹𝗮𝘆𝗲𝗿𝘀 𝘄𝗶𝘁𝗵 𝗮 𝗰𝗮𝗺𝗲𝗿𝗮 𝘁𝗵𝗮𝘁 𝗻𝗲𝘃𝗲𝗿 𝘀𝘁𝗼𝗽𝘀 𝗺𝗼𝘃𝗶𝗻𝗴
+
+Another project from my Master's in Computer Engineering at the University of Salerno, this time for the Artificial Vision course, run as a contest between teams.
+
+The task: take broadcast football clips and, in every frame, find every player, goalkeeper and referee, give each of them an ID that stays the same for the whole clip, and count how many players are standing inside two regions of the pitch.
+
+Finding the players turned out to be the easy part. The camera pans, zooms and follows the ball, so players keep leaving the frame and coming back, often while crossing a teammate in the exact same kit. Every time that happens, a standard tracker gives them a new ID, and the score drops.
+
+→ 𝗧𝗵𝗲 𝗱𝗲𝘁𝗲𝗰𝘁𝗼𝗿. We compared four YOLO versions and went with YOLOv8m, not the newest one. YOLO12m was ahead by about 0.25 points of recall, which wasn't worth the extra compute. The contest only scores at IoU 0.5, so we also changed how the best checkpoint gets picked, so training stopped chasing pixel-perfect boxes nobody would reward.
+
+→ 𝗧𝗵𝗲 𝘁𝗿𝗮𝗰𝗸𝗲𝗿. First ByteTrack, then BoT-SORT with camera motion compensation, then OSNet Re-ID embeddings on top. Each step helped, but a player who disappeared for a few seconds still came back as a stranger.
+
+→ 𝗧𝗵𝗲 𝗺𝗲𝗺𝗼𝗿𝘆. So we wrote our own layer on top of the tracker, which we called RobustMapper. A new ID isn't trusted until it survives 8 frames. A confirmed player keeps a gallery of up to 50 poses instead of a single averaged vector, because the same person seen from behind, from the side and half-hidden by a teammate looks like three different people. When someone reappears, we compare them against everyone we lost recently, and give the old ID back only if the position makes sense too.
+
+→ 𝗧𝗵𝗲 𝗰𝗼𝘂𝗻𝘁𝗶𝗻𝗴. The centre of a box sits on the player's torso, so to decide which region someone is in we use the middle of the bottom edge, where their feet are.
+
+On our local evaluation we reached 82.4% HOTA, up from 69.5% with plain ByteTrack, and a final score of 1.807 out of 2. The part I find most interesting is where that gain came from: detection accuracy went up by 4 points, association accuracy by 20.
+
+It still mixes people up during corners, with twenty players packed into the box. To be fair, so do I when I'm watching one live.
+
+What I'm taking away from it: we spent the first weeks trying to make the model see better, when the real problem was making it remember.
+
+Thanks to Leonardo Luongo for working on this with me.
+
+Code, report and figures: https://github.com/LeonardoLuongo/ArtificialVisionGroup17
+
+#ComputerVision #MultiObjectTracking #DeepLearning #PyTorch #YOLO #SoccerNet #UNISA
